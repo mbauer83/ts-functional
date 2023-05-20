@@ -404,6 +404,5 @@ class AdjacencyMatrixGraph<T> {
         return nodesArray.filter((t) => filterFn(t[0], t[1])).map((t) => t[0]);
     }
     
-
 }
 

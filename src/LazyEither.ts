@@ -1,5 +1,6 @@
 import { QueriedValueNotPresent, Throwable } from "./definitions";
 import { Either, Right } from "./Either";
+import { Optional } from "./Optional";
 
 export class LazyEither<L, R> implements Either<L, R> {
     private resolved: null|Either<L, R> = null;
@@ -138,6 +139,14 @@ export class LazyEither<L, R> implements Either<L, R> {
 
     equals(other: Either<L, R>): boolean {
         return this.getResolved().equals(other);
+    }
+
+    toOptional(): Optional<R> {
+        return this.getResolved().toOptional();
+    }
+
+    match<U>(left: (l: L) => U, right: (r: R) => U): U {
+        return this.getResolved().match(left, right);
     }
 
 }

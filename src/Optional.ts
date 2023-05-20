@@ -43,6 +43,10 @@ export interface Optional<T> extends Monad<T>, EqualityComparable<Optional<T>> {
     getOrQueriedValueNotPresent(msg?: string): Either<QueriedValueNotPresent, T>;
     isSome(): this is Some<T>;
     isNone(): this is None<T>;
+
+    match<U>(some: (t: T) => U, none: () => U): U;
+    toEither<L>(left: L): Either<L, T>;
+    toEitherLazy<L>(left: () => L): Either<L, T>;
 }
 
 export class None<T> implements Optional<T> {
@@ -146,6 +150,19 @@ export class None<T> implements Optional<T> {
     isNone(): this is None<T> {
         return true;
     }
+
+    match<U>(some: (t: T) => U, none: () => U): U {
+        return none();
+    }
+
+    toEither<L>(left: L): Either<L, T> {
+        return new Left<L, T>(left);
+    }
+
+    toEitherLazy<L>(left: () => L): Either<L, T> {
+        return new Left<L, T>(left());
+    }
+
 }
 
 export class Some<T> implements Optional<T> {
@@ -269,6 +286,18 @@ export class Some<T> implements Optional<T> {
 
     isNone(): this is None<T> {
         return !this.isSome();
+    }
+
+    match<U>(some: (t: T) => U, none: () => U): U {
+        return some(this.value);
+    }
+
+    toEither<L>(left: L): Either<L, T> {
+        return new Right<L, T>(this.value);
+    }
+
+    toEitherLazy<L>(left: () => L): Either<L, T> {
+        return new Right<L, T>(this.value);
     }
 }
 

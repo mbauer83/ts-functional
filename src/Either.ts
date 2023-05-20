@@ -1,6 +1,7 @@
 import { EqualityComparable } from '@mbauer83/ts-utils/src/comparison/equality';
 import { QueriedValueNotPresent, Throwable } from "./definitions";
 import { Monad } from "./Monad";
+import { None, Optional, Some } from './Optional';
 export interface Either<L, R> extends Monad<R>, EqualityComparable<Either<L, R>> {
     map<U>(f: (x: R) => U): Either<L, U>;
     mapWithNewLeft<U, L2>(f: (x: R) => U, g: (x: L|any) => L2): Either<L2, U>;
@@ -50,6 +51,9 @@ export interface Either<L, R> extends Monad<R>, EqualityComparable<Either<L, R>>
     withNewLeft<L2>(x: L2|((...args: any[]) => L2)): Either<L2, R>;
     isLeft(): this is Left<L, R>;
     isRight(): this is Right<L, R>;
+
+    toOptional(): Optional<R>;
+    match<U>(left: (l: L) => U, right: (r: R) => U): U;
 }
 
 export class Left<L, R> implements Either<L, R> {
@@ -169,6 +173,14 @@ export class Left<L, R> implements Either<L, R> {
 
     get(): L {
         return this.value;
+    }
+
+    toOptional(): Optional<R> {
+        return new None<R>();
+    }
+
+    match<U>(left: (l: L) => U, right: (r: R) => U): U {
+        return left(this.value);
     }
 
 }
@@ -378,6 +390,14 @@ export class Right<L, R> implements Either<L, R> {
 
     get(): R {
         return this.value;
+    }
+
+    toOptional(): Optional<R> {
+        return new Some<R>(this.value);
+    }
+
+    match<U>(left: (l: L) => U, right: (r: R) => U): U {
+        return right(this.value);
     }
 
 }

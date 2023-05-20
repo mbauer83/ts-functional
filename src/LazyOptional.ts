@@ -107,4 +107,16 @@ export class LazyOptional<T> implements Optional<T> {
         return this.getResolved().equals(other);
     }
 
+    match<U>(some: (t: T) => U, none: () => U): U {
+        return this.getResolved().match(some, none);
+    }
+
+    toEither<L>(left: L): Either<L, T> {
+        return this.getResolved().toEither(left);
+    }
+
+    toEitherLazy<L>(left: () => L): Either<L, T> {
+        return this.getResolved().toEitherLazy(left);
+    }
+
 }
