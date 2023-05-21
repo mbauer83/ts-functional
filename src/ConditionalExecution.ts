@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
-import {type Either, Left, Right} from './Either';
-import {type Monad} from './Monad';
+import {type Either, Left, Right} from './Either.js';
+import {type Monad} from './Monad.js';
 
 export class ConditionalExecution<T, E> implements Monad<T> {
 	constructor(

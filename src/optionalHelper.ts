@@ -1,6 +1,6 @@
-import {type Either, Left, Right} from './Either';
-import {LazyEither} from './LazyEither';
-import {type Optional} from './Optional';
+import {type Either, Left, Right} from './Either.js';
+import {LazyEither} from './LazyEither.js';
+import {type Optional} from './Optional.js';
 
 export function optionalToEither<T, L>(optional: Optional<T>, left: L): Either<L, T> {
 	return optional.match(

@@ -1,4 +1,4 @@
-import {AdditiveNumberSemigroup, type Semigroup, SemigroupElement, type SemigroupOperation} from './Semigroup';
+import {AdditiveNumberSemigroup, type Semigroup, SemigroupElement, type SemigroupOperation} from './Semigroup.js';
 
 export interface Monoid<T> extends Semigroup<T> {
 	id(): T;

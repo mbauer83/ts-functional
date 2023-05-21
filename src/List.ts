@@ -1,9 +1,9 @@
-import {type EqualityComparable} from '@mbauer83/ts-utils/src/comparison/equality';
-import {type HasCount} from '@mbauer83/ts-utils/src/size/HasCount';
-import {type Monad} from './Monad';
-import {type Monoid} from './Monoid';
-import {everyFilterable, type Filterable, noneFilterable, someFilterable} from './Filterable';
-import {type Predicate} from './Predicate';
+import {type EqualityComparable} from '@mbauer83/ts-utils/src/comparison/equality.js';
+import {type HasCount} from '@mbauer83/ts-utils/src/size/HasCount.js';
+import {type Monad} from './Monad.js';
+import {type Monoid} from './Monoid.js';
+import {everyFilterable, type Filterable, noneFilterable, someFilterable} from './Filterable.js';
+import {type Predicate} from './Predicate.js';
 
 export class List<T> implements Monad<T>, Monoid<List<T>>, Filterable<T>, EqualityComparable<List<T>>, HasCount {
 	static empty<T2>(): List<T2> {

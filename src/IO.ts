@@ -1,5 +1,5 @@
-import {type EqualityComparable} from '@mbauer83/ts-utils/src/comparison/equality';
-import {type Monad} from './Monad';
+import {type EqualityComparable} from '@mbauer83/ts-utils/src/comparison/equality.js';
+import {type Monad} from './Monad.js';
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export class IO<T> implements Monad<T>, EqualityComparable<IO<T>> {

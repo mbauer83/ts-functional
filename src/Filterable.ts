@@ -1,7 +1,7 @@
 /* eslint-disable unicorn/no-array-callback-reference */
-import {type HasSize} from '@mbauer83/ts-utils/src/size/HasSize';
-import {compareSize, sizesAreEqual} from '@mbauer83/ts-utils/src/size/size';
-import {type Predicate} from './Predicate';
+import {compareSize, sizesAreEqual} from '@mbauer83/ts-utils/src/size/size.js';
+import {type HasSize} from '@mbauer83/ts-utils/src/size/HasSize.js';
+import {type Predicate} from './Predicate.js';
 
 export type Filterable<T> = {
 	filter: (p: Predicate<T>) => Filterable<T>;

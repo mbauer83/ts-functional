@@ -1,8 +1,8 @@
-import {QueriedValueNotPresent, type Throwable} from './definitions';
-import {type Either, Left, Right} from './Either';
-import {HashMap, type MonadicHashMap} from './HashMap';
-import {type Optional} from './Optional';
-import {type Predicate} from './Predicate';
+import {QueriedValueNotPresent, type Throwable} from './definitions.js';
+import {type Either, Left, Right} from './Either.js';
+import {HashMap, type MonadicHashMap} from './HashMap.js';
+import {type Optional} from './Optional.js';
+import {type Predicate} from './Predicate.js';
 
 export interface LazyMonadicHashMap<S extends string | number | symbol, T> extends MonadicHashMap<S, T> {
 	id(): LazyMonadicHashMap<S, T>;

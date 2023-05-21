@@ -1,5 +1,5 @@
-import {type Path} from '@mbauer83/ts-utils/src/objectPath/Path';
-import {type PropertyType} from '@mbauer83/ts-utils/src/objectPath/PropertyType';
+import {type Path} from '@mbauer83/ts-utils/src/objectPath/Path.js';
+import {type PropertyType} from '@mbauer83/ts-utils/src/objectPath/PropertyType.js';
 
 export class Lens<I, P> {
 	// We need to work around TypeScript's inability to do partial type argument inference here,

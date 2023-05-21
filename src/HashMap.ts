@@ -1,12 +1,12 @@
-import {conditionalDo} from '@mbauer83/ts-utils';
-import {type HasCount} from '@mbauer83/ts-utils/src/size/HasCount';
-import {QueriedValueNotPresent, type Throwable} from './definitions';
-import {type Either, Left, Right} from './Either';
-import {everyFilterable, type Filterable, noneFilterable, someFilterable} from './Filterable';
-import {type Monad} from './Monad';
-import {type Monoid} from './Monoid';
-import {None, type Optional, type Some, optionalFromValue} from './Optional';
-import {type Predicate} from './Predicate';
+import {conditionalDo} from '@mbauer83/ts-utils/src/controlFlow/conditionalDo.js';
+import {type HasCount} from '@mbauer83/ts-utils/src/size/HasCount.js';
+import {QueriedValueNotPresent, type Throwable} from './definitions.js';
+import {type Either, Left, Right} from './Either.js';
+import {everyFilterable, type Filterable, noneFilterable, someFilterable} from './Filterable.js';
+import {type Monad} from './Monad.js';
+import {type Monoid} from './Monoid.js';
+import {None, type Optional, type Some, optionalFromValue} from './Optional.js';
+import {type Predicate} from './Predicate.js';
 
 export interface MonadicHashMap<S extends string | number | symbol, T> extends Monad<T>, Monoid<MonadicHashMap<S, T>>, Filterable<[S, T]>, HasCount {
 	op: (l: MonadicHashMap<S, T>, r: MonadicHashMap<S, T>) => MonadicHashMap<S, T>;

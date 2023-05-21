@@ -1,6 +1,6 @@
-import {type EqualityComparable} from '@mbauer83/ts-utils/src/comparison/equality';
-import {QueriedValueNotPresent, type Throwable} from './definitions';
-import {type Monad} from './Monad';
+import {type EqualityComparable} from '@mbauer83/ts-utils/src/comparison/equality.js';
+import {QueriedValueNotPresent, type Throwable} from './definitions.js';
+import {type Monad} from './Monad.js';
 
 export interface Either<L, R> extends Monad<R>, EqualityComparable<Either<L, R>> {
 	map<U>(f: (x: R) => U): Either<L, U>;

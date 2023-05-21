@@ -1,4 +1,4 @@
-import {type Applicative} from './Applicative';
+import {type Applicative} from './Applicative.js';
 
 export interface Monad<T> extends Applicative<T> {
 	map<U>(f: (x: T) => U): Monad<U>;

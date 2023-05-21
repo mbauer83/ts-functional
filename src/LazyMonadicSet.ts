@@ -1,5 +1,5 @@
-import {MonadicSet} from './MonadicSet';
-import {type Predicate} from './Predicate';
+import {MonadicSet} from './MonadicSet.js';
+import {type Predicate} from './Predicate.js';
 
 export class LazyMonadicSet<T> extends MonadicSet<T> {
 	protected resolved: undefined | MonadicSet<T> = undefined;

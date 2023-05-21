@@ -1,10 +1,10 @@
-import {type EqualityComparable} from '@mbauer83/ts-utils/src/comparison/equality';
-import {List} from './List';
-import {type Monad} from './Monad';
-import {None, type Optional, Some} from './Optional';
-import {Predicate} from './Predicate';
-import {type Either, Left, Right} from './Either';
-import {optionalToEither} from './optionalHelper';
+import {type EqualityComparable} from '@mbauer83/ts-utils/src/comparison/equality.js';
+import {List} from './List.js';
+import {type Monad} from './Monad.js';
+import {None, type Optional, Some} from './Optional.js';
+import {Predicate} from './Predicate.js';
+import {type Either, Left, Right} from './Either.js';
+import {optionalToEither} from './optionalHelper.js';
 
 export class Tree<T> implements Monad<T>, EqualityComparable<Tree<T>> {
 	private readonly size: number;

@@ -1,9 +1,9 @@
-import {type EqualityComparable} from '@mbauer83/ts-utils/src/comparison/equality';
-import {type HasCount} from '@mbauer83/ts-utils/src/size/HasCount';
-import {everyFilterable, type Filterable, noneFilterable, someFilterable} from './Filterable';
-import {type Monad} from './Monad';
-import {type Predicate} from './Predicate';
-import {None, type Optional, Some} from './Optional';
+import {type EqualityComparable} from '@mbauer83/ts-utils/src/comparison/equality.js';
+import {type HasCount} from '@mbauer83/ts-utils/src/size/HasCount.js';
+import {everyFilterable, type Filterable, noneFilterable, someFilterable} from './Filterable.js';
+import {type Monad} from './Monad.js';
+import {type Predicate} from './Predicate.js';
+import {None, type Optional, Some} from './Optional.js';
 
 export class MonadicStack<T> implements Monad<T>, EqualityComparable<MonadicStack<T>>, Filterable<T>, HasCount {
 	static empty<T>(): MonadicStack<T> {

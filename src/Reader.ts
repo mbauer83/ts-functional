@@ -1,5 +1,5 @@
-import {type EqualityComparable} from '@mbauer83/ts-utils/src/comparison/equality';
-import {type Monad} from './Monad';
+import {type EqualityComparable} from '@mbauer83/ts-utils/src/comparison/equality.js';
+import {type Monad} from './Monad.js';
 
 export class Reader<E, T> implements Monad<T>, EqualityComparable<Reader<E, T>> {
 	constructor(public readonly f: (x: E) => T) {}

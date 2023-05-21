@@ -1,5 +1,5 @@
-import {type EqualityComparable} from '@mbauer83/ts-utils/src/comparison/equality';
-import {type Monad} from './Monad';
+import {type EqualityComparable} from '@mbauer83/ts-utils/src/comparison/equality.js';
+import {type Monad} from './Monad.js';
 
 export function state<T, S>(f: (s: S) => [T, S]): State<T, S> {
 	return new State(f);

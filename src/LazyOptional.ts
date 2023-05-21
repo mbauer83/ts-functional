@@ -1,6 +1,6 @@
-import {type QueriedValueNotPresent, type Throwable} from './definitions';
-import {type Either} from './Either';
-import {None, type Optional, Some} from './Optional';
+import {type QueriedValueNotPresent, type Throwable} from './definitions.js';
+import {type Either} from './Either.js';
+import {None, type Optional, Some} from './Optional.js';
 
 export class LazyOptional<T> implements Optional<T> {
 	private resolved: Optional<T> | undefined = undefined;

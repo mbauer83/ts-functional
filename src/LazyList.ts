@@ -1,5 +1,5 @@
-import {List} from './List';
-import {type Predicate} from './Predicate';
+import {List} from './List.js';
+import {type Predicate} from './Predicate.js';
 
 export class LazyList<T> extends List<T> {
 	static combine<U>(l: List<U>, r: List<U>): LazyList<U> {

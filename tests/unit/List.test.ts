@@ -1,6 +1,6 @@
 import {describe, expect, test} from '@jest/globals';
-import { List } from '../../src/List';
-import { Predicate } from '../../src/Predicate';
+import { List } from '../../src/List.js';
+import { Predicate } from '../../src/Predicate.js';
 
 // test all methods of the List monad
 

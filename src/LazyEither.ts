@@ -1,5 +1,5 @@
-import {type QueriedValueNotPresent, type Throwable} from './definitions';
-import {type Either, Right, Left} from './Either';
+import {type QueriedValueNotPresent, type Throwable} from './definitions.js';
+import {type Either, Right, Left} from './Either.js';
 
 export class LazyEither<L, R> implements Either<L, R> {
 	private resolved: undefined | Either<L, R> = undefined;

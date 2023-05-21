@@ -1,4 +1,4 @@
-import {type Functor} from './Functor';
+import {type Functor} from './Functor.js';
 
 export interface Applicative<T> extends Functor<T> {
 	map<U>(f: (x: T) => U): Applicative<U>;

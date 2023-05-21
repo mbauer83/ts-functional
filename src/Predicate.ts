@@ -1,5 +1,5 @@
-import {type EqualityComparable} from '@mbauer83/ts-utils/src/comparison/equality';
-import {type Contravariant} from './Contravariant';
+import {type EqualityComparable} from '@mbauer83/ts-utils/src/comparison/equality.js';
+import {type Contravariant} from './Contravariant.js';
 
 export class Predicate<in T> implements Contravariant<Predicate<T>, T>, EqualityComparable<Predicate<T>> {
 	constructor(public readonly evaluate: (value: T) => boolean) {}

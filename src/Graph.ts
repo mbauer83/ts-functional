@@ -1,8 +1,8 @@
-import {MonadicSet} from './MonadicSet';
-import {type Either, Left, Right} from './Either';
-import {Predicate} from './Predicate';
-import {None, type Optional, Some, optionalFromValue} from './Optional';
-import {optionalToEither} from './optionalHelper';
+import {MonadicSet} from './MonadicSet.js';
+import {type Either, Left, Right} from './Either.js';
+import {Predicate} from './Predicate.js';
+import {None, type Optional, Some, optionalFromValue} from './Optional.js';
+import {optionalToEither} from './optionalHelper.js';
 
 class GraphIsNotConnectedError extends Error {
 	constructor() {

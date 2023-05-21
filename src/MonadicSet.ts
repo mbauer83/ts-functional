@@ -1,7 +1,7 @@
-import {type EqualityComparable} from '@mbauer83/ts-utils/src/comparison/equality';
-import {everyFilterable, type Filterable, noneFilterable, someFilterable} from './Filterable';
-import {type Monad} from './Monad';
-import {type Predicate} from './Predicate';
+import {type EqualityComparable} from '@mbauer83/ts-utils/src/comparison/equality.js';
+import {everyFilterable, type Filterable, noneFilterable, someFilterable} from './Filterable.js';
+import {type Monad} from './Monad.js';
+import {type Predicate} from './Predicate.js';
 
 export class MonadicSet<T> implements Monad<T>, EqualityComparable<MonadicSet<T>>, Filterable<T> {
 	protected readonly innerSet: Set<T>;

@@ -1,7 +1,7 @@
-import {type EqualityComparable} from '@mbauer83/ts-utils/src/comparison/equality';
-import {type Semigroup, StringSemigroup} from './Semigroup';
-import {type Monoid, ArrayMonoid} from './Monoid';
-import {type Monad} from './Monad';
+import {type EqualityComparable} from '@mbauer83/ts-utils/src/comparison/equality.js';
+import {type Semigroup, StringSemigroup} from './Semigroup.js';
+import {type Monoid, ArrayMonoid} from './Monoid.js';
+import {type Monad} from './Monad.js';
 
 export function resetWriter<T, L>(w: Writer<T, L, Monoid<L>>): Writer<T, L, Monoid<L>> {
 	return new Writer(w.value, w.logSemiGroup, w.logSemiGroup.id());
