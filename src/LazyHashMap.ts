@@ -1,274 +1,324 @@
-import { QueriedValueNotPresent, Throwable } from "./definitions";
-import { Either } from "./Either";
-import { HashMap, MonadicHashMap } from "./HashMap";
-import { Optional } from "./Optional";
-import { Predicate } from "./Predicate";
+import {QueriedValueNotPresent, type Throwable} from './definitions';
+import {type Either, Left, Right} from './Either';
+import {HashMap, type MonadicHashMap} from './HashMap';
+import {type Optional} from './Optional';
+import {type Predicate} from './Predicate';
 
-export interface LazyMonadicHashMap<S, T> extends MonadicHashMap<S, T> {
-    filter(p: Predicate<[S, T]>): LazyHashMap<S, T>;
-    withEntry(key: S, value: T): LazyHashMap<S, T>;
-    withoutEntry(key: S): LazyHashMap<S, T>;
-    withEntries(...pairs: [S, T][]): LazyHashMap<S, T>;
-    withoutEntries(...keys: S[]): LazyHashMap<S, T>;
-    map<U>(f: (x: T) => U): LazyHashMap<S, U>;
-    apply<U>(f: HashMap<S, (x: T) => U>): LazyHashMap<S, U>;
-    pure<U>(x: U): LazyHashMap<number, U>;
-    flatMap<U>(f: (x: T) => HashMap<S, U>): LazyHashMap<S, U[]>;
-    concat(other: Map<S, T>): LazyHashMap<S, T>;
-    zip<U>(other: HashMap<S, U>): LazyHashMap<S, [T, U]>;
-    zipWithAllValues<U>(other: HashMap<S, U>): LazyHashMap<S, Map<string, T|U>>;
-    zip2<U, V>(o1: HashMap<S, U>, o2: HashMap<S, V>): LazyHashMap<S, [T, U, V]>;
-    zip2WithAllValues<U, V>(o1: HashMap<S, U>, o2: HashMap<S, V>): LazyHashMap<S, Map<string, T|U|V>>;
-    zip3<U, V, W>(o1: HashMap<S, U>, o2: HashMap<S, V>, o3: HashMap<S, W>): LazyHashMap<S, [T, U, V, W]>;
-    zip3WithAllValues<U, V, W>(
-        o1: HashMap<S, U>, 
-        o2: HashMap<S, V>, 
-        o3: HashMap<S, W>
-    ): LazyHashMap<S, Map<string, T|U|V|W>>;
-    zip4<U, V, W, X>(
-        o1: HashMap<S, U>,
-        o2: HashMap<S, V>,
-        o3: HashMap<S, W>,
-        o4: HashMap<S, X>
-    ): LazyHashMap<S, [T, U, V, W, X]>;
-    zip4WithAllValues<U, V, W, X>(
-        o1: HashMap<S, U>,
-        o2: HashMap<S, V>,
-        o3: HashMap<S, W>,
-        o4: HashMap<S, X>
-    ): LazyHashMap<S, Map<string, T|U|V|W|X>>;
-    zip5<U, V, W, X, Y>(
-        o1: HashMap<S, U>,
-        o2: HashMap<S, V>,
-        o3: HashMap<S, W>,
-        o4: HashMap<S, X>,
-        o5: HashMap<S, Y>
-    ): LazyHashMap<S, [T, U, V, W, X, Y]>;
-    zip5WithAllValues<U, V, W, X, Y>(
-        o1: HashMap<S, U>,
-        o2: HashMap<S, V>,
-        o3: HashMap<S, W>,
-        o4: HashMap<S, X>,
-        o5: HashMap<S, Y>
-    ): LazyHashMap<S, Map<string, T|U|V|W|X|Y>>;
-    zip6<U, V, W, X, Y, Z>(
-        o1: HashMap<S, U>,
-        o2: HashMap<S, V>,
-        o3: HashMap<S, W>,
-        o4: HashMap<S, X>,
-        o5: HashMap<S, Y>,
-        o6: HashMap<S, Z>
-    ): LazyHashMap<S, [T, U, V, W, X, Y, Z]>;
-    zip6WithAllValues<U, V, W, X, Y, Z>(
-        o1: HashMap<S, U>,
-        o2: HashMap<S, V>,
-        o3: HashMap<S, W>,
-        o4: HashMap<S, X>,
-        o5: HashMap<S, Y>,
-        o6: HashMap<S, Z>
-    ): LazyHashMap<S, Map<string, T|U|V|W|X|Y|Z>>;
+export interface LazyMonadicHashMap<S extends string | number | symbol, T> extends MonadicHashMap<S, T> {
+	id(): LazyMonadicHashMap<S, T>;
+	filter(p: Predicate<[S, T]>): LazyMonadicHashMap<S, T>;
+	withEntry(key: S, value: T): LazyMonadicHashMap<S, T>;
+	withoutEntry(key: S): LazyMonadicHashMap<S, T>;
+	withEntries(...pairs: Array<[S, T]>): LazyMonadicHashMap<S, T>;
+	withoutEntries(...keys: S[]): LazyMonadicHashMap<S, T>;
+	map<U>(f: (x: T) => U): LazyMonadicHashMap<S, U>;
+	apply<U>(f: MonadicHashMap<S, (x: T) => U>): LazyMonadicHashMap<S, U>;
+	pure<U>(x: U): LazyMonadicHashMap<number, U>;
+	flatMap<U>(f: (x: T) => HashMap<S, U>): LazyMonadicHashMap<S, U[]>;
+	concat(other: MonadicHashMap<S, T>): LazyMonadicHashMap<S, T>;
+	zip<U>(other: MonadicHashMap<S, U>): LazyMonadicHashMap<S, [T, U]>;
+	zipWithAllValues<U>(other: MonadicHashMap<S, U>): LazyMonadicHashMap<S, Map<string, T | U>>;
+	zip2<U, V>(o1: MonadicHashMap<S, U>, o2: MonadicHashMap<S, V>): LazyMonadicHashMap<S, [T, U, V]>;
+	zip2WithAllValues<U, V>(o1: MonadicHashMap<S, U>, o2: MonadicHashMap<S, V>): LazyMonadicHashMap<S, Map<string, T | U | V>>;
+	zip3<U, V, W>(o1: MonadicHashMap<S, U>, o2: MonadicHashMap<S, V>, o3: MonadicHashMap<S, W>): LazyMonadicHashMap<S, [T, U, V, W]>;
+	zip3WithAllValues<U, V, W>(
+		o1: MonadicHashMap<S, U>,
+		o2: MonadicHashMap<S, V>,
+		o3: MonadicHashMap<S, W>
+	): LazyMonadicHashMap<S, Map<string, T | U | V | W>>;
+	zip4<U, V, W, X>(
+		o1: MonadicHashMap<S, U>,
+		o2: MonadicHashMap<S, V>,
+		o3: MonadicHashMap<S, W>,
+		o4: MonadicHashMap<S, X>
+	): LazyMonadicHashMap<S, [T, U, V, W, X]>;
+	zip4WithAllValues<U, V, W, X>(
+		o1: MonadicHashMap<S, U>,
+		o2: MonadicHashMap<S, V>,
+		o3: MonadicHashMap<S, W>,
+		o4: MonadicHashMap<S, X>
+	): LazyMonadicHashMap<S, Map<string, T | U | V | W | X>>;
+	zip5<U, V, W, X, Y>(
+		o1: MonadicHashMap<S, U>,
+		o2: MonadicHashMap<S, V>,
+		o3: MonadicHashMap<S, W>,
+		o4: MonadicHashMap<S, X>,
+		o5: MonadicHashMap<S, Y>
+	): LazyMonadicHashMap<S, [T, U, V, W, X, Y]>;
+	zip5WithAllValues<U, V, W, X, Y>(
+		o1: MonadicHashMap<S, U>,
+		o2: MonadicHashMap<S, V>,
+		o3: MonadicHashMap<S, W>,
+		o4: MonadicHashMap<S, X>,
+		o5: MonadicHashMap<S, Y>
+	): LazyMonadicHashMap<S, Map<string, T | U | V | W | X | Y>>;
+	zip6<U, V, W, X, Y, Z>(
+		o1: MonadicHashMap<S, U>,
+		o2: MonadicHashMap<S, V>,
+		o3: MonadicHashMap<S, W>,
+		o4: MonadicHashMap<S, X>,
+		o5: MonadicHashMap<S, Y>,
+		o6: MonadicHashMap<S, Z>
+	): LazyHashMap<S, [T, U, V, W, X, Y, Z]>;
+	zip6WithAllValues<U, V, W, X, Y, Z>(
+		o1: MonadicHashMap<S, U>,
+		o2: MonadicHashMap<S, V>,
+		o3: MonadicHashMap<S, W>,
+		o4: MonadicHashMap<S, X>,
+		o5: MonadicHashMap<S, Y>,
+		o6: MonadicHashMap<S, Z>
+	): LazyMonadicHashMap<S, Map<string, T | U | V | W | X | Y | Z>>;
 }
 
-export class LazyHashMap<S, T> extends HashMap<S, T> {
-    private resolved: null|HashMap<S, T> = null;
-    constructor(private readonly f: () => Map<S, T>) {
-        super();
-    }
+export class LazyHashMap<S extends string | number | symbol, T> implements LazyMonadicHashMap<S, T> {
+	protected static readonly defaultErrorMessage = (key: string) => `LazyMonadicHashMap::getOrThrow - Unknown key [${key}].`;
+	protected readonly lazyEmpty: LazyHashMap<S, T> = new LazyHashMap<S, T>(() => new Map<S, T>());
+	private resolved: undefined | HashMap<S, T> = undefined;
+	constructor(private readonly f: () => Map<S, T>) {}
 
-    protected getResolved(): HashMap<S, T> {
-        if (this.resolved === null) {
-            this.resolved = new HashMap<S, T>(...this.f().entries());
-        }
-        return this.resolved!;
-    }
+	readonly op: (l: MonadicHashMap<S, T>, r: MonadicHashMap<S, T>) => MonadicHashMap<S, T> = (l, r) => l.concat(r);
 
-    
-    filter(p: Predicate<[S, T]>): LazyHashMap<S, T> {
-        return new LazyHashMap<S, T>(() => this.getResolved().filter(p).getAsMap());
-    }
+	id(): LazyMonadicHashMap<S, T> {
+		return this.lazyEmpty;
+	}
 
-    every(p: Predicate<[S, T]>): boolean {
-        return this.getResolved().every(p);
-    }
+	filter(p: Predicate<[S, T]>): LazyHashMap<S, T> {
+		// `p` is a predicate, and this custom method takes only predicates
+		// eslint-disable-next-line unicorn/no-array-callback-reference
+		return new LazyHashMap<S, T>(() => this.getResolved().filter(p).getAsMap());
+	}
 
-    some(p: Predicate<[S, T]>): boolean {
-        return this.getResolved().some(p);
-    }
+	every(p: Predicate<[S, T]>): boolean {
+		// `p` is a predicate, and this custom method takes only predicates
+		// eslint-disable-next-line unicorn/no-array-callback-reference
+		return this.getResolved().every(p);
+	}
 
-    none(p: Predicate<[S, T]>): boolean {
-        return this.getResolved().none(p);
-    }
+	some(p: Predicate<[S, T]>): boolean {
+		// `p` is a predicate, and this custom method takes only predicates
+		// eslint-disable-next-line unicorn/no-array-callback-reference
+		return this.getResolved().some(p);
+	}
 
-    [Symbol.iterator](): Iterator<[S, T]> {
-        return this.getResolved()[Symbol.iterator]();
-    }
+	none(p: Predicate<[S, T]>): boolean {
+		return this.getResolved().none(p);
+	}
 
-    getAsMap(): Map<S, T> {
-        return this.getResolved().getAsMap();
-    }
+	[Symbol.iterator](): Iterator<[S, T]> {
+		return this.getResolved()[Symbol.iterator]();
+	}
 
-    getSize(): number {
-        return this.getResolved().getSize();
-    }
+	getAsMap(): Map<S, T> {
+		return this.getResolved().getAsMap();
+	}
 
-    has(key: S): boolean {
-        return this.getResolved().has(key);
-    }
+	getSize(): number {
+		return this.getResolved().getSize();
+	}
 
-    getOrElse(key: S, defaultValue: T): T {
-        return this.getResolved().getOrElse(key, defaultValue);
-    }
+	has(key: S): boolean {
+		return this.getResolved().has(key);
+	}
 
-    getOrThrow(key: S, t: Throwable = HashMap.DEFAULT_ERROR_MESSAGE): T {
-        return this.getResolved().getOrThrow(key, t);
-    }
+	getOrElse(key: S, defaultValue: T): T {
+		return this.getResolved().getOrElse(key, defaultValue);
+	}
 
-    getOrQueriedValueNotPresent(key: S, msg?: string): Either<QueriedValueNotPresent, T> {
-        return this.getResolved().getOrQueriedValueNotPresent(key, msg);
-    }
+	getOrThrow(key: S, t: Throwable = LazyHashMap.defaultErrorMessage): T {
+		return this.getResolved().getOrThrow(key, t);
+	}
 
-    get(key: S): Optional<T> {
-        return this.getResolved().get(key);
-    }
+	getOrQueriedValueNotPresent(key: S, message?: string): Either<QueriedValueNotPresent, T> {
+		const resolved = this.getResolved();
+		const value = resolved.getAsMap().get(key);
+		return value
+			? new Right<QueriedValueNotPresent, T>(value)
+			: new Left<QueriedValueNotPresent, T>(new QueriedValueNotPresent(message ?? `LazyMonadicHashMap::getOrQueriedValueNotPresent(${key as string})`));
+	}
 
-    withEntry(key: S, value: T): LazyHashMap<S, T> {
-        return new LazyHashMap<S, T>(() => this.getResolved().withEntry(key, value).getAsMap());
-    }
+	get(key: S): Optional<T> {
+		return this.getResolved().get(key);
+	}
 
-    withoutEntry(key: S): LazyHashMap<S, T> {
-        return new LazyHashMap<S, T>(() => this.getResolved().withoutEntry(key).getAsMap());
-    }
+	withEntry(key: S, value: T): LazyHashMap<S, T> {
+		return new LazyHashMap<S, T>(() => this.getResolved().withEntry(key, value).getAsMap());
+	}
 
-    withEntries(...pairs: [S, T][]): LazyHashMap<S, T> {
-        return new LazyHashMap<S, T>(() => this.getResolved().withEntries(...pairs).getAsMap());
-    }
+	withoutEntry(key: S): LazyHashMap<S, T> {
+		return new LazyHashMap<S, T>(() => this.getResolved().withoutEntry(key).getAsMap());
+	}
 
-    withoutEntries(...keys: S[]): LazyHashMap<S, T> {
-        return new LazyHashMap<S, T>(() => this.getResolved().withoutEntries(...keys).getAsMap());
-    }
+	withEntries(...pairs: Array<[S, T]>): LazyHashMap<S, T> {
+		return new LazyHashMap<S, T>(() => this.getResolved().withEntries(...pairs).getAsMap());
+	}
 
-    map<U>(f: (x: T) => U): LazyHashMap<S, U> {
-        return new LazyHashMap<S, U>(() => this.getResolved().map(f).getAsMap());
-    }
+	withoutEntries(...keys: S[]): LazyHashMap<S, T> {
+		return new LazyHashMap<S, T>(() => this.getResolved().withoutEntries(...keys).getAsMap());
+	}
 
-    apply<U>(f: HashMap<S, (x: T) => U>): LazyHashMap<S, U> {
-        return new LazyHashMap<S, U>(() => this.getResolved().apply(f).getAsMap());
-    }
+	map<U>(f: (x: T) => U): LazyHashMap<S, U> {
+		return new LazyHashMap<S, U>(() => this.getResolved().map(t => f(t)).getAsMap());
+	}
 
-    pure<U>(x: U): LazyHashMap<number, U> {
-        return new LazyHashMap<number, U>(() => new Map<number, U>([[0, x] as [number, U]]));
-    }
+	apply<U>(f: MonadicHashMap<S, (x: T) => U>): LazyHashMap<S, U> {
+		// Linting doesn't work unless we do this with a for loop
+		const resolver = () => {
+			const resolved = this.getResolved();
+			const resolvedF = f.getAsMap();
+			const result = new Map<S, U>();
+			for (const [key, value] of resolved.entries()) {
+				const f = resolvedF.get(key);
+				if (f !== undefined) {
+					result.set(key, f(value));
+				}
+			}
 
-    flatMap<U>(f: (x: T) => HashMap<S, U>): LazyHashMap<S, U[]> {
-        return new LazyHashMap<S, U[]>(() => this.getResolved().flatMap(f).getAsMap());
-    }
+			return result;
+		};
 
-    concat(other: Map<S, T>): LazyHashMap<S, T> {
-        return new LazyHashMap<S, T>(() => this.getResolved().concat(other).getAsMap());
-    }
+		return new LazyHashMap<S, U>(resolver);
+	}
 
-    zip<U>(other: HashMap<S, U>): LazyHashMap<S, [T, U]> {
-        return new LazyHashMap<S, [T, U]>(() => this.getResolved().zip(other).getAsMap());
-    }
+	pure<U>(x: U): LazyHashMap<number, U> {
+		return new LazyHashMap<number, U>(() => new Map<number, U>([[0, x] as [number, U]]));
+	}
 
-    zipWithAllValues<U>(other: HashMap<S, U>): LazyHashMap<S, Map<string, T|U>> {
-        return new LazyHashMap<S, Map<string, T|U>>(() => this.getResolved().zipWithAllValues(other).getAsMap());
-    }
+	flatMap<U>(f: (x: T) => MonadicHashMap<S, U>): LazyHashMap<S, U[]> {
+		const resolver = () => {
+			const resolved = this.getResolved();
+			return resolved.flatMap<U>(t => f(t)).getAsMap();
+		};
 
-    zip2<U, V>(o1: HashMap<S, U>, o2: HashMap<S, V>): LazyHashMap<S, [T, U, V]> {
-        return new LazyHashMap<S, [T, U, V]>(() => this.getResolved().zip2(o1, o2).getAsMap());
-    }
+		return new LazyHashMap<S, U[]>(resolver);
+	}
 
-    zip2WithAllValues<U, V>(o1: HashMap<S, U>, o2: HashMap<S, V>): LazyHashMap<S, Map<string, T|U|V>> {
-        return new LazyHashMap<S, Map<string, T|U|V>>(() => this.getResolved().zip2WithAllValues(o1, o2).getAsMap());
-    }
+	concat(other: MonadicHashMap<S, T>): LazyHashMap<S, T> {
+		return new LazyHashMap<S, T>(() => this.getResolved().concat(other).getAsMap());
+	}
 
-    zip3<U, V, W>(o1: HashMap<S, U>, o2: HashMap<S, V>, o3: HashMap<S, W>): LazyHashMap<S, [T, U, V, W]> {
-        return new LazyHashMap<S, [T, U, V, W]>(() => this.getResolved().zip3(o1, o2, o3).getAsMap());
-    }
+	zip<U>(other: MonadicHashMap<S, U>): LazyHashMap<S, [T, U]> {
+		const resolver = () => {
+			const resolved = this.getResolved();
+			const zipped = resolved.zip<U>(other).getAsMap();
+			return zipped;
+		};
 
-    zip3WithAllValues<U, V, W>(
-        o1: HashMap<S, U>, 
-        o2: HashMap<S, V>, 
-        o3: HashMap<S, W>
-    ): LazyHashMap<S, Map<string, T|U|V|W>> {
-        return new LazyHashMap<S, Map<string, T|U|V|W>>(() => this.getResolved().zip3WithAllValues(o1, o2, o3).getAsMap());
-    }
+		return new LazyHashMap<S, [T, U]>(resolver);
+	}
 
-    zip4<U, V, W, X>(
-        o1: HashMap<S, U>,
-        o2: HashMap<S, V>,
-        o3: HashMap<S, W>,
-        o4: HashMap<S, X>
-    ): LazyHashMap<S, [T, U, V, W, X]> {
-        return new LazyHashMap<S, [T, U, V, W, X]>(() => this.getResolved().zip4(o1, o2, o3, o4).getAsMap());
-    }
+	zipWithAllValues<U>(other: MonadicHashMap<S, U>): LazyHashMap<S, Map<string, T | U>> {
+		const resolver = () => {
+			const resolved = this.getResolved();
+			const zipped = resolved.zipWithAllValues<U>(other).getAsMap();
+			return zipped;
+		};
 
-    zip4WithAllValues<U, V, W, X>(
-        o1: HashMap<S, U>,
-        o2: HashMap<S, V>,
-        o3: HashMap<S, W>,
-        o4: HashMap<S, X>
-    ): LazyHashMap<S, Map<string, T|U|V|W|X>> {
-        return new LazyHashMap<S, Map<string, T|U|V|W|X>>(() => this.getResolved().zip4WithAllValues(o1, o2, o3, o4).getAsMap());
-    }
+		return new LazyHashMap<S, Map<string, T | U>>(resolver);
+	}
 
-    zip5<U, V, W, X, Y>(
-        o1: HashMap<S, U>,
-        o2: HashMap<S, V>,
-        o3: HashMap<S, W>,
-        o4: HashMap<S, X>,
-        o5: HashMap<S, Y>
-    ): LazyHashMap<S, [T, U, V, W, X, Y]> {
-        return new LazyHashMap<S, [T, U, V, W, X, Y]>(() => this.getResolved().zip5(o1, o2, o3, o4, o5).getAsMap());
-    }
+	zip2<U, V>(o1: MonadicHashMap<S, U>, o2: MonadicHashMap<S, V>): LazyHashMap<S, [T, U, V]> {
+		return new LazyHashMap<S, [T, U, V]>(() => this.getResolved().zip2<U, V>(o1, o2).getAsMap());
+	}
 
-    zip5WithAllValues<U, V, W, X, Y>(
-        o1: HashMap<S, U>,
-        o2: HashMap<S, V>,
-        o3: HashMap<S, W>,
-        o4: HashMap<S, X>,
-        o5: HashMap<S, Y>
-    ): LazyHashMap<S, Map<string, T|U|V|W|X|Y>> {
-        return new LazyHashMap<S, Map<string, T|U|V|W|X|Y>>(() => this.getResolved().zip5WithAllValues(o1, o2, o3, o4, o5).getAsMap());
-    }
+	zip2WithAllValues<U, V>(o1: MonadicHashMap<S, U>, o2: MonadicHashMap<S, V>): LazyHashMap<S, Map<string, T | U | V>> {
+		return new LazyHashMap<S, Map<string, T | U | V>>(() => this.getResolved().zip2WithAllValues<U, V>(o1, o2).getAsMap());
+	}
 
-    zip6<U, V, W, X, Y, Z>(
-        o1: HashMap<S, U>,
-        o2: HashMap<S, V>,
-        o3: HashMap<S, W>,
-        o4: HashMap<S, X>,
-        o5: HashMap<S, Y>,
-        o6: HashMap<S, Z>
-    ): LazyHashMap<S, [T, U, V, W, X, Y, Z]> {
-        return new LazyHashMap<S, [T, U, V, W, X, Y, Z]>(() => this.getResolved().zip6(o1, o2, o3, o4, o5, o6).getAsMap());
-    }
+	zip3<U, V, W>(o1: MonadicHashMap<S, U>, o2: MonadicHashMap<S, V>, o3: MonadicHashMap<S, W>): LazyHashMap<S, [T, U, V, W]> {
+		return new LazyHashMap<S, [T, U, V, W]>(() => this.getResolved().zip3<U, V, W>(o1, o2, o3).getAsMap());
+	}
 
-    zip6WithAllValues<U, V, W, X, Y, Z>(
-        o1: HashMap<S, U>,
-        o2: HashMap<S, V>,
-        o3: HashMap<S, W>,
-        o4: HashMap<S, X>,
-        o5: HashMap<S, Y>,
-        o6: HashMap<S, Z>
-    ): LazyHashMap<S, Map<string, T|U|V|W|X|Y|Z>> {
-        return new LazyHashMap<S, Map<string, T|U|V|W|X|Y|Z>>(() => this.getResolved().zip6WithAllValues(o1, o2, o3, o4, o5, o6).getAsMap());
-    }
+	zip3WithAllValues<U, V, W>(
+		o1: MonadicHashMap<S, U>,
+		o2: MonadicHashMap<S, V>,
+		o3: MonadicHashMap<S, W>,
+	): LazyHashMap<S, Map<string, T | U | V | W>> {
+		return new LazyHashMap<S, Map<string, T | U | V | W>>(() => this.getResolved().zip3WithAllValues<U, V, W>(o1, o2, o3).getAsMap());
+	}
 
-    forEach(callbackfn: (value: T, key: S, map: Map<S, T>) => void, thisArg?: any): void {
-        this.getResolved().forEach(callbackfn, thisArg);
-    }
+	zip4<U, V, W, X>(
+		o1: MonadicHashMap<S, U>,
+		o2: MonadicHashMap<S, V>,
+		o3: MonadicHashMap<S, W>,
+		o4: MonadicHashMap<S, X>,
+	): LazyHashMap<S, [T, U, V, W, X]> {
+		return new LazyHashMap<S, [T, U, V, W, X]>(() => this.getResolved().zip4<U, V, W, X>(o1, o2, o3, o4).getAsMap());
+	}
 
-    entries(): IterableIterator<[S, T]> {
-        return this.getResolved().entries();
-    }
+	zip4WithAllValues<U, V, W, X>(
+		o1: MonadicHashMap<S, U>,
+		o2: MonadicHashMap<S, V>,
+		o3: MonadicHashMap<S, W>,
+		o4: MonadicHashMap<S, X>,
+	): LazyHashMap<S, Map<string, T | U | V | W | X>> {
+		return new LazyHashMap<S, Map<string, T | U | V | W | X>>(() => this.getResolved().zip4WithAllValues<U, V, W, X>(o1, o2, o3, o4).getAsMap());
+	}
 
-    keys(): IterableIterator<S> {
-        return this.getResolved().keys();
-    }
+	zip5<U, V, W, X, Y>(
+		o1: MonadicHashMap<S, U>,
+		o2: MonadicHashMap<S, V>,
+		o3: MonadicHashMap<S, W>,
+		o4: MonadicHashMap<S, X>,
+		o5: MonadicHashMap<S, Y>,
+	): LazyHashMap<S, [T, U, V, W, X, Y]> {
+		return new LazyHashMap<S, [T, U, V, W, X, Y]>(() => this.getResolved().zip5<U, V, W, X, Y>(o1, o2, o3, o4, o5).getAsMap());
+	}
 
-    values(): IterableIterator<T> {
-        return this.getResolved().values();
-    }
+	zip5WithAllValues<U, V, W, X, Y>(
+		o1: MonadicHashMap<S, U>,
+		o2: MonadicHashMap<S, V>,
+		o3: MonadicHashMap<S, W>,
+		o4: MonadicHashMap<S, X>,
+		o5: MonadicHashMap<S, Y>,
+	): LazyHashMap<S, Map<string, T | U | V | W | X | Y>> {
+		return new LazyHashMap<S, Map<string, T | U | V | W | X | Y>>(() => this.getResolved().zip5WithAllValues<U, V, W, X, Y>(o1, o2, o3, o4, o5).getAsMap());
+	}
 
+	zip6<U, V, W, X, Y, Z>(
+		o1: MonadicHashMap<S, U>,
+		o2: MonadicHashMap<S, V>,
+		o3: MonadicHashMap<S, W>,
+		o4: MonadicHashMap<S, X>,
+		o5: MonadicHashMap<S, Y>,
+		o6: MonadicHashMap<S, Z>,
+	): LazyHashMap<S, [T, U, V, W, X, Y, Z]> {
+		return new LazyHashMap<S, [T, U, V, W, X, Y, Z]>(() => this.getResolved().zip6<U, V, W, X, Y, Z>(o1, o2, o3, o4, o5, o6).getAsMap());
+	}
+
+	zip6WithAllValues<U, V, W, X, Y, Z>(
+		o1: MonadicHashMap<S, U>,
+		o2: MonadicHashMap<S, V>,
+		o3: MonadicHashMap<S, W>,
+		o4: MonadicHashMap<S, X>,
+		o5: MonadicHashMap<S, Y>,
+		o6: MonadicHashMap<S, Z>,
+	): LazyHashMap<S, Map<string, T | U | V | W | X | Y | Z>> {
+		return new LazyHashMap<S, Map<string, T | U | V | W | X | Y | Z>>(() => this.getResolved().zip6WithAllValues<U, V, W, X, Y, Z>(o1, o2, o3, o4, o5, o6).getAsMap());
+	}
+
+	forEach(callbackfn: (value: T, key: S, map: Map<S, T>) => void, thisArg?: any): void {
+		// `forEach` here is a custom method
+		// eslint-disable-next-line unicorn/no-array-for-each, unicorn/no-array-callback-reference, unicorn/no-array-method-this-argument
+		this.getResolved().forEach(callbackfn, thisArg);
+	}
+
+	entries(): IterableIterator<[S, T]> {
+		return this.getResolved().entries();
+	}
+
+	keys(): IterableIterator<S> {
+		return this.getResolved().keys();
+	}
+
+	values(): IterableIterator<T> {
+		return this.getResolved().values();
+	}
+
+	protected getResolved(): MonadicHashMap<S, T> {
+		if (this.resolved === undefined) {
+			this.resolved = new HashMap<S, T>(...this.f().entries());
+		}
+
+		return this.resolved;
+	}
 }

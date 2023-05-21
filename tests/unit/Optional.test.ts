@@ -218,6 +218,13 @@ describe('test Optional monad', () => {
         expect(numberOptSome.getOrQueriedValueNotPresent()).toBeInstanceOf(Right);
     });
 
+    test('test match', () => {
+        const someMatch = numberOptSome.match((x) => x.toString(), () => 'none');
+        const noneMatch = numberOptNone.match((x) => x.toString(), () => 'none');
+        expect (someMatch).toBe('2');
+        expect (noneMatch).toBe('none');
+    });
+
     test('test optionalFroMValue', () => {
         expect(optionalFromValue(2)).toBeInstanceOf(Some);
         expect(optionalFromValue('a').getOrThrow('')).toBe('a');

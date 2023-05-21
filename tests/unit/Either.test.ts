@@ -1,14 +1,12 @@
-// Tests for the Left and Right
-
-import { Left, Right, Either, eitherFromFnOrErrorFn, eitherFromFnOrError } from '../../src/Either';
 import {describe, expect, test} from '@jest/globals';
-import { QueriedValueNotPresent } from '../../src/definitions';
+import {QueriedValueNotPresent} from '../../src/definitions';
+import {Left, Right, eitherFromFnOrError, eitherFromFnOrErrorFn} from '../../src/Either';
 
 describe('Either monad', () => {
-    // test every method in Left
+    // Test every method in Left
 
-    test('Left.map', () => {
-        const left = new Left<number, string>(1);
+	test('Left.map', () => {
+		const left = new Left<number, string>(1);
         const result = left.map(x => x + "!");
         expect(result).toBeInstanceOf(Left);
         expect(result).toEqual(new Left(1));
@@ -181,6 +179,12 @@ describe('Either monad', () => {
     test('Left.get', () => {
         const left = new Left<number, string>(1);
         expect(left.get()).toBe(1);
+    });
+
+    test('Left.match', () => {
+        const left = new Left<number, string>(1);
+        const result = left.match(x => x + '!', () => 'none');
+        expect(result).toBe("1!");
     });
 
     // Test every method in Right
@@ -554,6 +558,12 @@ describe('Either monad', () => {
     test('Right.get', () => {
         const origin = new Right<string, string>("Hello");
         expect(origin.get()).toBe("Hello");
+    });
+
+    test('Right.match', () => {
+        const origin = new Right<string, string>("Hello");
+        const result = origin.match(() => "none", x => x + "!");
+        expect(result).toBe("Hello!");
     });
 
     test('eitherFromFnOrErrorFn', () => {

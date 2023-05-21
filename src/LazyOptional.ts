@@ -1,122 +1,127 @@
-import { QueriedValueNotPresent, Throwable } from "./definitions";
-import { Either } from "./Either";
-import { None, Optional, Some } from "./Optional";
+import {type QueriedValueNotPresent, type Throwable} from './definitions';
+import {type Either} from './Either';
+import {None, type Optional, Some} from './Optional';
 
 export class LazyOptional<T> implements Optional<T> {
-    private resolved: null|Optional<T> = null;
-    constructor(private readonly fn: (...args: any[]) => Optional<T>, private readonly argsProvider: () => any[]) {}
+	private resolved: Optional<T> | undefined = undefined;
+	private readonly argsProvider: () => any[];
+	constructor(private readonly fn: (args: any[]) => Optional<T>, argsProvider: () => any[] = () => []) {
+		this.argsProvider = argsProvider;
+	}
 
-    private resolve(): void {
-        this.resolved = this.fn(...this.argsProvider());
-    }
+	getResolved(): Optional<T> {
+		if (this.resolved === null) {
+			this.resolve();
+		}
 
-    getResolved(): Optional<T> {
-        if (this.resolved === null) {
-            this.resolve();
-        }
-        return this.resolved!;
-    }
+		return this.resolved!;
+	}
 
-    map<U>(f: (x: T) => U): LazyOptional<U> {
-        return new LazyOptional<U>(() => this.getResolved().map(f), () => []);
-    }
+	map<U>(f: (x: T) => U): LazyOptional<U> {
+		return new LazyOptional<U>(() => this.getResolved().map<U>(t => f(t)));
+	}
 
-    pure<U>(x: U): LazyOptional<U> {
-        return new LazyOptional<U>(() => new Some(x), () => []);
-    }
+	pure<U>(x: U): LazyOptional<U> {
+		const fn: (args: any[]) => Optional<U> = () => new Some<U>(x);
+		return new LazyOptional<U>(fn);
+	}
 
-    apply<U>(f: Optional<(x: T) => U>): LazyOptional<U> {
-        return new LazyOptional<U>(() => this.getResolved().apply(f), () => []);
-    }
+	apply<U>(f: Optional<(x: T) => U>): LazyOptional<U> {
+		const resolver = () => {
+			const resolved = this.getResolved();
+			const fmapped = f.match<Optional<U>>(
+				g => resolved.map<U>(t => g(t)),
+				() => new None<U>() as Optional<U>,
+			);
+			return fmapped;
+		};
 
-    flatMap<U>(f: (x: T) => Optional<U>): LazyOptional<U> {
-        return new LazyOptional<U>(() => this.getResolved().flatMap(f), () => []);
-    }
+		return new LazyOptional<U>(resolver);
+	}
 
-    fold<U>(f: () => U, g: (x: T) => U): U {
-        return this.getResolved().fold(f, g);
-    }
+	flatMap<U>(f: (x: T) => Optional<U>): LazyOptional<U> {
+		return new LazyOptional<U>(() => this.getResolved().flatMap<U>(t => f(t)), () => []);
+	}
 
-    zip<U>(other: Optional<U>): LazyOptional<[T, U]> {
-        return new LazyOptional<[T, U]>(() => this.getResolved().zip(other), () => []);
-    }
+	fold<U>(f: () => U, g: (x: T) => U): U {
+		return this.getResolved().fold(f, g);
+	}
 
-    zip2<U, V>(o1: Optional<U>, o2: Optional<V>): LazyOptional<[T, U, V]> {
-        return new LazyOptional<[T, U, V]>(() => this.getResolved().zip2(o1, o2), () => []);
-    }
+	zip<U>(other: Optional<U>): LazyOptional<[T, U]> {
+		return new LazyOptional<[T, U]>(() => this.getResolved().zip<U>(other), () => []);
+	}
 
-    zip3<U, V, W>(o1: Optional<U>, o2: Optional<V>, o3: Optional<W>): LazyOptional<[T, U, V, W]> {
-        return new LazyOptional<[T, U, V, W]>(() => this.getResolved().zip3(o1, o2, o3), () => []);
-    }
+	zip2<U, V>(o1: Optional<U>, o2: Optional<V>): LazyOptional<[T, U, V]> {
+		return new LazyOptional<[T, U, V]>(() => this.getResolved().zip2<U, V>(o1, o2), () => []);
+	}
 
-    zip4<U, V, W, X>(
-        o1: Optional<U>, 
-        o2: Optional<V>, 
-        o3: Optional<W>, 
-        o4: Optional<X>
-    ): LazyOptional<[T, U, V, W, X]> {
-        return new LazyOptional<[T, U, V, W, X]>(() => this.getResolved().zip4(o1, o2, o3, o4), () => []);
-    }
+	zip3<U, V, W>(o1: Optional<U>, o2: Optional<V>, o3: Optional<W>): LazyOptional<[T, U, V, W]> {
+		return new LazyOptional<[T, U, V, W]>(() => this.getResolved().zip3<U, V, W>(o1, o2, o3), () => []);
+	}
 
-    zip5<U, V, W, X, Y>(
-        o1: Optional<U>,
-        o2: Optional<V>,
-        o3: Optional<W>,
-        o4: Optional<X>,
-        o5: Optional<Y>
-    ): LazyOptional<[T, U, V, W, X, Y]> {
-        return new LazyOptional<[T, U, V, W, X, Y]>(() => this.getResolved().zip5(o1, o2, o3, o4, o5), () => []);
-    }
+	zip4<U, V, W, X>(
+		o1: Optional<U>,
+		o2: Optional<V>,
+		o3: Optional<W>,
+		o4: Optional<X>,
+	): LazyOptional<[T, U, V, W, X]> {
+		return new LazyOptional<[T, U, V, W, X]>(() => this.getResolved().zip4<U, V, W, X>(o1, o2, o3, o4), () => []);
+	}
 
-    zip6<U, V, W, X, Y, Z>(
-        o1: Optional<U>,
-        o2: Optional<V>,
-        o3: Optional<W>,
-        o4: Optional<X>,
-        o5: Optional<Y>,
-        o6: Optional<Z>
-    ): LazyOptional<[T, U, V, W, X, Y, Z]> {
-        return new LazyOptional<[T, U, V, W, X, Y, Z]>(() => this.getResolved().zip6(o1, o2, o3, o4, o5, o6), () => []);
-    }
+	zip5<U, V, W, X, Y>(
+		o1: Optional<U>,
+		o2: Optional<V>,
+		o3: Optional<W>,
+		o4: Optional<X>,
+		o5: Optional<Y>,
+	): LazyOptional<[T, U, V, W, X, Y]> {
+		return new LazyOptional<[T, U, V, W, X, Y]>(() => this.getResolved().zip5<U, V, W, X, Y>(o1, o2, o3, o4, o5), () => []);
+	}
 
-    zipN<U>(os: Optional<U>[]): LazyOptional<[T, ...U[]]> {
-        return new LazyOptional<[T, ...U[]]>(() => this.getResolved().zipN(os), () => []);
-    }
+	zip6<U, V, W, X, Y, Z>(
+		o1: Optional<U>,
+		o2: Optional<V>,
+		o3: Optional<W>,
+		o4: Optional<X>,
+		o5: Optional<Y>,
+		o6: Optional<Z>,
+	): LazyOptional<[T, U, V, W, X, Y, Z]> {
+		return new LazyOptional<[T, U, V, W, X, Y, Z]>(() => this.getResolved().zip6<U, V, W, X, Y, Z>(o1, o2, o3, o4, o5, o6), () => []);
+	}
 
-    getOrElse(x: T): T {
-        return this.getResolved().getOrElse(x);
-    }
+	zipN<U>(os: Array<Optional<U>>): LazyOptional<[T, ...U[]]> {
+		return new LazyOptional<[T, ...U[]]>(() => this.getResolved().zipN(os), () => []);
+	}
 
-    getOrThrow(t: Throwable): T {
-        return this.getResolved().getOrThrow(t);
-    }
+	getOrElse(x: T): T {
+		return this.getResolved().getOrElse(x);
+	}
 
-    getOrQueriedValueNotPresent(msg?: string): Either<QueriedValueNotPresent, T> {
-        return this.getResolved().getOrQueriedValueNotPresent(msg);
-    }
+	getOrThrow(t: Throwable): T {
+		return this.getResolved().getOrThrow(t);
+	}
 
-    isSome(): this is Some<T> {
-        return this.getResolved().isSome();
-    }
+	getOrQueriedValueNotPresent(message?: string): Either<QueriedValueNotPresent, T> {
+		return this.getResolved().getOrQueriedValueNotPresent(message);
+	}
 
-    isNone(): this is None<T> {
-        return this.getResolved().isNone();
-    }
+	isSome(): this is Some<T> {
+		return this.getResolved().isSome();
+	}
 
-    equals(other: Optional<T>): boolean {
-        return this.getResolved().equals(other);
-    }
+	isNone(): this is None<T> {
+		return this.getResolved().isNone();
+	}
 
-    match<U>(some: (t: T) => U, none: () => U): U {
-        return this.getResolved().match(some, none);
-    }
+	equals(other: Optional<T>): boolean {
+		return this.getResolved().equals(other);
+	}
 
-    toEither<L>(left: L): Either<L, T> {
-        return this.getResolved().toEither(left);
-    }
+	match<U>(some: (t: T) => U, none: () => U): U {
+		return this.getResolved().match(some, none);
+	}
 
-    toEitherLazy<L>(left: () => L): Either<L, T> {
-        return this.getResolved().toEitherLazy(left);
-    }
-
+	private resolve(): void {
+		this.resolved = this.fn(this.argsProvider());
+	}
 }

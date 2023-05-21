@@ -1,151 +1,174 @@
-import { MonadicSet } from "./MonadicSet";
-import { Predicate } from "./Predicate";
+import {MonadicSet} from './MonadicSet';
+import {type Predicate} from './Predicate';
 
 export class LazyMonadicSet<T> extends MonadicSet<T> {
-    constructor(protected readonly f: () => T[]) {
-        super();
-    }
-    protected resolved: null|MonadicSet<T> = null;
-    protected getResolved(): MonadicSet<T> {
-        if (this.resolved === null) {
-            this.resolved = new MonadicSet(this.f());
-        }
-        return this.resolved!;
-    }
+	protected resolved: undefined | MonadicSet<T> = undefined;
 
-    filter(p: Predicate<T>): LazyMonadicSet<T> {
-        return new LazyMonadicSet(() => this.getResolved().filter(p).getElementsAsArray());
-    }
+	constructor(protected readonly f: () => T[]) {
+		super();
+	}
 
-    every(p: Predicate<T>): boolean {
-        return this.getResolved().every(p);
-    }
+	filter(p: Predicate<T>): LazyMonadicSet<T> {
+		const resolver = () => {
+			const resolved = this.getResolved();
+			// `p` is a predicate, and this custom method takes only predicates
+			// eslint-disable-next-line unicorn/no-array-callback-reference
+			const filtered = resolved.filter(p);
+			return filtered.getElementsAsArray();
+		};
 
-    some(p: Predicate<T>): boolean {
-        return this.getResolved().some(p);
-    }
+		return new LazyMonadicSet(resolver);
+	}
 
-    none(p: Predicate<T>): boolean {
-        return this.getResolved().none(p);
-    }
+	every(p: Predicate<T>): boolean {
+		// `p` is a predicate, and this custom method takes only predicates
+		// eslint-disable-next-line unicorn/no-array-callback-reference
+		return this.getResolved().every(p);
+	}
 
-    getSize(): number {
-        return this.getResolved().getSize();
-    }
+	some(p: Predicate<T>): boolean {
+		// `p` is a predicate, and this custom method takes only predicates
+		// eslint-disable-next-line unicorn/no-array-callback-reference
+		return this.getResolved().some(p);
+	}
 
-    [Symbol.iterator](): IterableIterator<T> {
-        return this.innerSet[Symbol.iterator]();
-    }
+	none(p: Predicate<T>): boolean {
+		return this.getResolved().none(p);
+	}
 
-    protected values(): IterableIterator<T> {
-        return this.getResolved()[Symbol.iterator]();
-    }
+	getSize(): number {
+		return this.getResolved().getSize();
+	}
 
-    forEach(callbackfn: (value: T, value2: T, set: Set<T>) => void, thisArg?: any): void {
-        this.getResolved().forEach(callbackfn, thisArg);
-    }
+	[Symbol.iterator](): IterableIterator<T> {
+		return this.innerSet[Symbol.iterator]();
+	}
 
-    has(value: T): boolean {
-        return this.getResolved().has(value);
-    }
+	forEach(callbackfn: (value: T, value2: T, set: Set<T>) => void, thisArg?: any): void {
+		// `forEach` here is a custom method
+		// eslint-disable-next-line unicorn/no-array-for-each, unicorn/no-array-callback-reference, unicorn/no-array-method-this-argument
+		this.getResolved().forEach(callbackfn, thisArg);
+	}
 
-    equals(other: MonadicSet<T>): boolean {
-        return this.getResolved().equals(other);
-    }
+	has(value: T): boolean {
+		return this.getResolved().has(value);
+	}
 
-    add(value: T): LazyMonadicSet<T> {
-        return new LazyMonadicSet(() => this.getResolved().add(value).getElementsAsArray());
-    }
+	equals(other: MonadicSet<T>): boolean {
+		return this.getResolved().equals(other);
+	}
 
-    delete(value: T): LazyMonadicSet<T> {
-        return new LazyMonadicSet(() => this.getResolved().delete(value).getElementsAsArray());
-    }
+	add(value: T): this {
+		const prototype = Object.getPrototypeOf(this) as this;
+		const ctor = (ts: T[]): this => prototype.constructor(ts) as this;
+		return ctor(this.getElementsAsArray().concat(value));
+	}
 
-    getElementsAsArray(): T[] {
-        return this.getResolved().getElementsAsArray();
-    }
+	delete(value: T): this {
+		const prototype = Object.getPrototypeOf(this) as this;
+		const ctor = (ts: T[]): this => prototype.constructor(ts) as this;
+		const array = this.getResolved().delete(value).getElementsAsArray();
+		return ctor(array);
+	}
 
-    pure<U>(e: U): LazyMonadicSet<U> {
-        return new LazyMonadicSet(() => [e]);
-    }
+	getElementsAsArray(): T[] {
+		return this.getResolved().getElementsAsArray();
+	}
 
-    map<U>(f: (x: T) => U): LazyMonadicSet<U> {
-        return new LazyMonadicSet(() => this.getResolved().map(f).getElementsAsArray());
-    }
+	pure<U>(element: U): LazyMonadicSet<U> {
+		return new LazyMonadicSet(() => [element]);
+	}
 
-    apply<U>(f: MonadicSet<(x: T) => U>): MonadicSet<U> {
-        const all: MonadicSet<U> = new MonadicSet();
-        this.forEach((value: T) => {
-            const mappedValues = f.map(fn => fn(value));
-            mappedValues.getElementsAsArray().forEach(mappedValue => {
-                if (all.has(mappedValue)) {
-                    return;
-                }
-                all.add(mappedValue);
-            });
-        });
-        return all;
-    }
+	map<U>(f: (x: T) => U): LazyMonadicSet<U> {
+		return new LazyMonadicSet(() => this.getResolved().map(t => f(t)).getElementsAsArray());
+	}
 
-    flatMap<U>(f: (x: T) => MonadicSet<U>): LazyMonadicSet<U> {
-        return new LazyMonadicSet(() => this.getResolved().flatMap(f).getElementsAsArray());
-    }
+	apply<U>(f: MonadicSet<(x: T) => U>): MonadicSet<U> {
+		const all = new MonadicSet<U>();
+		// eslint-disable-next-line unicorn/no-array-for-each
+		this.forEach((value: T) => {
+			const mappedValues = f.map(fn => fn(value));
+			for (const mappedValue of mappedValues.getElementsAsArray()) {
+				if (all.has(mappedValue)) {
+					continue;
+				}
 
-    zip<U>(other: MonadicSet<U>): LazyMonadicSet<[T, U]> {
-        return new LazyMonadicSet(() => this.getResolved().zip(other).getElementsAsArray());
-    }
+				all.add(mappedValue);
+			}
+		});
+		return all;
+	}
 
-    zip2<U, V>(o1: MonadicSet<U>, o2: MonadicSet<V>): LazyMonadicSet<[T, U, V]> {
-        return new LazyMonadicSet(() => this.getResolved().zip2(o1, o2).getElementsAsArray());
-    }
+	flatMap<U>(f: (x: T) => MonadicSet<U>): LazyMonadicSet<U> {
+		return new LazyMonadicSet(() => this.getResolved().flatMap(t => f(t)).getElementsAsArray());
+	}
 
-    zip3<U, V, W>(o1: MonadicSet<U>, o2: MonadicSet<V>, o3: MonadicSet<W>): LazyMonadicSet<[T, U, V, W]> {
-        return new LazyMonadicSet(() => this.getResolved().zip3(o1, o2, o3).getElementsAsArray());
-    }
+	zip<U>(other: MonadicSet<U>): LazyMonadicSet<[T, U]> {
+		return new LazyMonadicSet(() => this.getResolved().zip(other).getElementsAsArray());
+	}
 
-    zip4<U, V, W, X>(o1: MonadicSet<U>, o2: MonadicSet<V>, o3: MonadicSet<W>, o4: MonadicSet<X>): LazyMonadicSet<[T, U, V, W, X]> {
-        return new LazyMonadicSet(() => this.getResolved().zip4(o1, o2, o3, o4).getElementsAsArray());
-    }
+	zip2<U, V>(o1: MonadicSet<U>, o2: MonadicSet<V>): LazyMonadicSet<[T, U, V]> {
+		return new LazyMonadicSet(() => this.getResolved().zip2(o1, o2).getElementsAsArray());
+	}
 
-    zip5<U, V, W, X, Y>(
-        o1:MonadicSet<U>, 
-        o2: MonadicSet<V>, 
-        o3: MonadicSet<W>, 
-        o4: MonadicSet<X>, 
-        o5: MonadicSet<Y>
-    ): LazyMonadicSet<[T, U, V, W, X, Y]> {
-        return new LazyMonadicSet(() => this.getResolved().zip5(o1, o2, o3, o4, o5).getElementsAsArray());
-    }
+	zip3<U, V, W>(o1: MonadicSet<U>, o2: MonadicSet<V>, o3: MonadicSet<W>): LazyMonadicSet<[T, U, V, W]> {
+		return new LazyMonadicSet(() => this.getResolved().zip3(o1, o2, o3).getElementsAsArray());
+	}
 
-    zip6<U, V, W, X, Y, Z>(
-        o1:MonadicSet<U>,
-        o2: MonadicSet<V>,
-        o3: MonadicSet<W>,
-        o4: MonadicSet<X>,
-        o5: MonadicSet<Y>,
-        o6: MonadicSet<Z>
-    ): LazyMonadicSet<[T, U, V, W, X, Y, Z]> {
-        return new LazyMonadicSet(() => this.getResolved().zip6(o1, o2, o3, o4, o5, o6).getElementsAsArray());
-    }
+	zip4<U, V, W, X>(o1: MonadicSet<U>, o2: MonadicSet<V>, o3: MonadicSet<W>, o4: MonadicSet<X>): LazyMonadicSet<[T, U, V, W, X]> {
+		return new LazyMonadicSet(() => this.getResolved().zip4(o1, o2, o3, o4).getElementsAsArray());
+	}
 
-    zipN<U>(...others: MonadicSet<U>[]): LazyMonadicSet<[T, ...U[]]> {
-        return new LazyMonadicSet(() => this.getResolved().zipN(...others).getElementsAsArray());
-    }
+	zip5<U, V, W, X, Y>(
+		o1: MonadicSet<U>,
+		o2: MonadicSet<V>,
+		o3: MonadicSet<W>,
+		o4: MonadicSet<X>,
+		o5: MonadicSet<Y>,
+	): LazyMonadicSet<[T, U, V, W, X, Y]> {
+		return new LazyMonadicSet(() => this.getResolved().zip5(o1, o2, o3, o4, o5).getElementsAsArray());
+	}
 
-    intersect(...others: MonadicSet<T>[]): LazyMonadicSet<T> {
-        return new LazyMonadicSet(() => this.getResolved().intersect(...others).getElementsAsArray());
-    }
+	zip6<U, V, W, X, Y, Z>(
+		o1: MonadicSet<U>,
+		o2: MonadicSet<V>,
+		o3: MonadicSet<W>,
+		o4: MonadicSet<X>,
+		o5: MonadicSet<Y>,
+		o6: MonadicSet<Z>,
+	): LazyMonadicSet<[T, U, V, W, X, Y, Z]> {
+		return new LazyMonadicSet(() => this.getResolved().zip6(o1, o2, o3, o4, o5, o6).getElementsAsArray());
+	}
 
-    union<U>(...others: MonadicSet<U>[]): LazyMonadicSet<T|U> {
-        return new LazyMonadicSet(() => this.getResolved().union(...others).getElementsAsArray());
-    }
+	zipN<U>(...others: Array<MonadicSet<U>>): LazyMonadicSet<[T, ...U[]]> {
+		return new LazyMonadicSet(() => this.getResolved().zipN(...others).getElementsAsArray());
+	}
 
-    difference(...others: MonadicSet<T>[]): LazyMonadicSet<T> {
-        return new LazyMonadicSet(() => this.getResolved().difference(...others).getElementsAsArray());
-    }
+	intersect(...others: Array<MonadicSet<T>>): LazyMonadicSet<T> {
+		return new LazyMonadicSet(() => this.getResolved().intersect(...others).getElementsAsArray());
+	}
 
-    symmetricDifference(other: MonadicSet<T>): LazyMonadicSet<T> {
-        return new LazyMonadicSet(() => this.getResolved().symmetricDifference(other).getElementsAsArray());
-    }
+	union<U>(...others: Array<MonadicSet<U>>): LazyMonadicSet<T | U> {
+		return new LazyMonadicSet(() => this.getResolved().union(...others).getElementsAsArray());
+	}
 
+	difference(...others: Array<MonadicSet<T>>): LazyMonadicSet<T> {
+		return new LazyMonadicSet(() => this.getResolved().difference(...others).getElementsAsArray());
+	}
+
+	symmetricDifference(other: MonadicSet<T>): LazyMonadicSet<T> {
+		return new LazyMonadicSet(() => this.getResolved().symmetricDifference(other).getElementsAsArray());
+	}
+
+	protected values(): IterableIterator<T> {
+		return this.getResolved()[Symbol.iterator]();
+	}
+
+	protected getResolved(): MonadicSet<T> {
+		if (this.resolved === undefined) {
+			this.resolved = new MonadicSet(this.f());
+		}
+
+		return this.resolved;
+	}
 }
