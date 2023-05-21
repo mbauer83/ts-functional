@@ -1,3 +1,4 @@
+/* eslint-disable */
 import {describe, expect, test} from '@jest/globals';
 import {QueriedValueNotPresent} from '../../src/definitions';
 import {Left, Right, eitherFromFnOrError, eitherFromFnOrErrorFn} from '../../src/Either';

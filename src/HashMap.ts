@@ -199,7 +199,7 @@ export class HashMap<S extends string | number | symbol, T> implements MonadicHa
 		return new HashMap<S, U[]>(...newPairs);
 	}
 
-	concat(other: HashMap<S, T>): HashMap<S, T> {
+	concat(other: MonadicHashMap<S, T>): HashMap<S, T> {
 		const newMap = new Map<S, T>(this._map.entries());
 		for (const [k, v] of other.entries()) {
 			newMap.set(k, v);
@@ -208,7 +208,7 @@ export class HashMap<S extends string | number | symbol, T> implements MonadicHa
 		return new HashMap<S, T>(...newMap.entries());
 	}
 
-	zip<U>(other: HashMap<S, U>): HashMap<S, [T, U]> {
+	zip<U>(other: MonadicHashMap<S, U>): HashMap<S, [T, U]> {
 		const newPairs: Array<[S, [T, U]]> = [];
 		for (const [k, v] of this._map.entries()) {
 			const otherOpt = other.get(k);
@@ -221,9 +221,9 @@ export class HashMap<S extends string | number | symbol, T> implements MonadicHa
 		return new HashMap<S, [T, U]>(...newPairs);
 	}
 
-	zipWithAllValues<U>(other: HashMap<S, U>): HashMap<S, Map<string, T | U>> {
+	zipWithAllValues<U>(other: MonadicHashMap<S, U>): HashMap<S, Map<string, T | U>> {
 		const newPairs: Array<[S, Map<string, T | U>]> = [];
-		const allKeys = new Set([...this._map.keys(), ...other._map.keys()]);
+		const allKeys = new Set([...this._map.keys(), ...other.getAsMap().keys()]);
 		for (const k of allKeys) {
 			const thisOpt = this.get(k);
 			const otherOpt = other.get(k);
@@ -243,7 +243,7 @@ export class HashMap<S extends string | number | symbol, T> implements MonadicHa
 		return new HashMap<S, Map<string, T | U>>(...newPairs);
 	}
 
-	zip2<U, V>(o1: HashMap<S, U>, o2: HashMap<S, V>): HashMap<S, [T, U, V]> {
+	zip2<U, V>(o1: MonadicHashMap<S, U>, o2: MonadicHashMap<S, V>): HashMap<S, [T, U, V]> {
 		const newPairs: Array<[S, [T, U, V]]> = [];
 		for (const [k, v] of this._map.entries()) {
 			const otherOpt = o1.get(k);
@@ -262,7 +262,7 @@ export class HashMap<S extends string | number | symbol, T> implements MonadicHa
 		return new HashMap<S, [T, U, V]>(...newPairs);
 	}
 
-	zip2WithAllValues<U, V>(o1: HashMap<S, U>, o2: HashMap<S, V>): HashMap<S, Map<string, T | U | V>> {
+	zip2WithAllValues<U, V>(o1: MonadicHashMap<S, U>, o2: MonadicHashMap<S, V>): HashMap<S, Map<string, T | U | V>> {
 		const newPairs: Array<[S, Map<string, T | U | V>]> = [];
 		const allKeys = [...this._map.keys(), ...o1.keys(), ...o2.keys()];
 
@@ -293,7 +293,7 @@ export class HashMap<S extends string | number | symbol, T> implements MonadicHa
 		return new HashMap<S, Map<string, T | U | V>>(...newPairs);
 	}
 
-	zip3<U, V, W>(o1: HashMap<S, U>, o2: HashMap<S, V>, o3: HashMap<S, W>): HashMap<S, [T, U, V, W]> {
+	zip3<U, V, W>(o1: MonadicHashMap<S, U>, o2: MonadicHashMap<S, V>, o3: MonadicHashMap<S, W>): HashMap<S, [T, U, V, W]> {
 		const newPairs: Array<[S, [T, U, V, W]]> = [];
 		for (const [k, v] of this._map.entries()) {
 			const otherOpt = o1.get(k);
@@ -319,9 +319,9 @@ export class HashMap<S extends string | number | symbol, T> implements MonadicHa
 	}
 
 	zip3WithAllValues<U, V, W>(
-		o1: HashMap<S, U>,
-		o2: HashMap<S, V>,
-		o3: HashMap<S, W>,
+		o1: MonadicHashMap<S, U>,
+		o2: MonadicHashMap<S, V>,
+		o3: MonadicHashMap<S, W>,
 	): HashMap<S, Map<string, T | U | V | W>> {
 		const newPairs: Array<[S, Map<string, T | U | V | W>]> = [];
 		const allKeys = [...this._map.keys(), ...o1.keys(), ...o2.keys(), ...o3.keys()];
@@ -359,10 +359,10 @@ export class HashMap<S extends string | number | symbol, T> implements MonadicHa
 	}
 
 	zip4<U, V, W, X>(
-		o1: HashMap<S, U>,
-		o2: HashMap<S, V>,
-		o3: HashMap<S, W>,
-		o4: HashMap<S, X>,
+		o1: MonadicHashMap<S, U>,
+		o2: MonadicHashMap<S, V>,
+		o3: MonadicHashMap<S, W>,
+		o4: MonadicHashMap<S, X>,
 	): HashMap<S, [T, U, V, W, X]> {
 		const newPairs: Array<[S, [T, U, V, W, X]]> = [];
 		for (const [k, v] of this._map.entries()) {
@@ -396,10 +396,10 @@ export class HashMap<S extends string | number | symbol, T> implements MonadicHa
 	}
 
 	zip4WithAllValues<U, V, W, X>(
-		o1: HashMap<S, U>,
-		o2: HashMap<S, V>,
-		o3: HashMap<S, W>,
-		o4: HashMap<S, X>,
+		o1: MonadicHashMap<S, U>,
+		o2: MonadicHashMap<S, V>,
+		o3: MonadicHashMap<S, W>,
+		o4: MonadicHashMap<S, X>,
 	): HashMap<S, Map<string, T | U | V | W | X>> {
 		const newPairs: Array<[S, Map<string, T | U | V | W | X>]> = [];
 		const allKeys = [...this._map.keys(), ...o1.keys(), ...o2.keys(), ...o3.keys(), ...o4.keys()];
@@ -444,11 +444,11 @@ export class HashMap<S extends string | number | symbol, T> implements MonadicHa
 	}
 
 	zip5<U, V, W, X, Y>(
-		o1: HashMap<S, U>,
-		o2: HashMap<S, V>,
-		o3: HashMap<S, W>,
-		o4: HashMap<S, X>,
-		o5: HashMap<S, Y>,
+		o1: MonadicHashMap<S, U>,
+		o2: MonadicHashMap<S, V>,
+		o3: MonadicHashMap<S, W>,
+		o4: MonadicHashMap<S, X>,
+		o5: MonadicHashMap<S, Y>,
 	): HashMap<S, [T, U, V, W, X, Y]> {
 		const newPairs: Array<[S, [T, U, V, W, X, Y]]> = [];
 		for (const [k, v] of this._map.entries()) {
@@ -488,11 +488,11 @@ export class HashMap<S extends string | number | symbol, T> implements MonadicHa
 	}
 
 	zip5WithAllValues<U, V, W, X, Y>(
-		o1: HashMap<S, U>,
-		o2: HashMap<S, V>,
-		o3: HashMap<S, W>,
-		o4: HashMap<S, X>,
-		o5: HashMap<S, Y>,
+		o1: MonadicHashMap<S, U>,
+		o2: MonadicHashMap<S, V>,
+		o3: MonadicHashMap<S, W>,
+		o4: MonadicHashMap<S, X>,
+		o5: MonadicHashMap<S, Y>,
 	): HashMap<S, Map<string, T | U | V | W | X | Y>> {
 		const newPairs: Array<[S, Map<string, T | U | V | W | X | Y>]> = [];
 		const allKeys = [...this._map.keys(), ...o1.keys(), ...o2.keys(), ...o3.keys(), ...o4.keys(), ...o5.keys()];
@@ -536,12 +536,12 @@ export class HashMap<S extends string | number | symbol, T> implements MonadicHa
 	}
 
 	zip6<U, V, W, X, Y, Z>(
-		o1: HashMap<S, U>,
-		o2: HashMap<S, V>,
-		o3: HashMap<S, W>,
-		o4: HashMap<S, X>,
-		o5: HashMap<S, Y>,
-		o6: HashMap<S, Z>,
+		o1: MonadicHashMap<S, U>,
+		o2: MonadicHashMap<S, V>,
+		o3: MonadicHashMap<S, W>,
+		o4: MonadicHashMap<S, X>,
+		o5: MonadicHashMap<S, Y>,
+		o6: MonadicHashMap<S, Z>,
 	): HashMap<S, [T, U, V, W, X, Y, Z]> {
 		const newPairs: Array<[S, [T, U, V, W, X, Y, Z]]> = [];
 		for (const [k, v] of this._map.entries()) {
@@ -587,12 +587,12 @@ export class HashMap<S extends string | number | symbol, T> implements MonadicHa
 	}
 
 	zip6WithAllValues<U, V, W, X, Y, Z>(
-		o1: HashMap<S, U>,
-		o2: HashMap<S, V>,
-		o3: HashMap<S, W>,
-		o4: HashMap<S, X>,
-		o5: HashMap<S, Y>,
-		o6: HashMap<S, Z>,
+		o1: MonadicHashMap<S, U>,
+		o2: MonadicHashMap<S, V>,
+		o3: MonadicHashMap<S, W>,
+		o4: MonadicHashMap<S, X>,
+		o5: MonadicHashMap<S, Y>,
+		o6: MonadicHashMap<S, Z>,
 	): HashMap<S, Map<string, T | U | V | W | X | Y | Z>> {
 		const newPairs: Array<[S, Map<string, T | U | V | W | X | Y | Z>]> = [];
 		const allKeys = [...this._map.keys(), ...o1.keys(), ...o2.keys(), ...o3.keys(), ...o4.keys(), ...o5.keys(), ...o6.keys()];

@@ -1,5 +1,6 @@
 export class AdaptiveLens<I, P, R, O> {
-	static forProperty<I2 extends Record<string, unknown>, R2>() {
+	// eslint-disable-next-line @typescript-eslint/ban-types
+	static forProperty<I2 extends object, R2>() {
 		return function <K extends keyof I2, O2 extends Omit<I2, K> & Record<K, R2>>(name: K): AdaptiveLens<I2, I2[K], R2, O2> {
 			return new AdaptiveLens<I2, I2[K], R2, O2>(
 				(i: I2) => i[name],
@@ -18,7 +19,8 @@ export class AdaptiveLens<I, P, R, O> {
 	}
 
 	// Here it gets more complicated because we need the compiler to infer `K` and `O`.
-	static forProperties<I2 extends Record<string, unknown>, P2>() {
+	// eslint-disable-next-line @typescript-eslint/ban-types
+	static forProperties<I2 extends object, P2>() {
 		return function <K extends Array<keyof I2>, O2 extends Omit<I2, K[number]> & {[PK in keyof P2]: P2[PK]}>(
 			names: [...K],
 		): AdaptiveLens<I2, {[N in keyof K]: I2[K[N]]}, P2, O2> {
@@ -32,22 +34,22 @@ export class AdaptiveLens<I, P, R, O> {
 			};
 
 			const updater = (i: I2, newData: P2): O2 => {
-				const iCopy = Object.create(i) as O2;
+				const iCopy = Object.create(i) as I2;
 				Object.assign(iCopy, i);
 				for (const name of names) {
 					// eslint-disable-next-line @typescript-eslint/no-dynamic-delete
-					delete iCopy[name as keyof O2];
+					delete iCopy[name as keyof I2];
 				}
 
 				Object.assign(iCopy, newData);
-				return iCopy;
+				return iCopy as unknown as O2;
 			};
 
 			return new AdaptiveLens(projector, updater);
 		};
 	}
 
-	constructor(protected readonly get: (i: I) => P, protected readonly update: (i: I, p: R) => O) {}
+	constructor(public readonly get: (i: I) => P, public readonly update: (i: I, p: R) => O) {}
 
 	compose<P2 extends P[keyof P], P2R>(l2: AdaptiveLens<P, P2, P2R, R>): AdaptiveLens<I, P2, P2R, O> {
 		return new AdaptiveLens(

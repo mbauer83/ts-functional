@@ -5,7 +5,8 @@ export class Lens<I, P> {
 	// We need to work around TypeScript's inability to do partial type argument inference here,
 	// which is why we need to employ currying to split up the generic types and allow the compiler
 	// to perform the correct inference for `K` (meaning we do not have to specify it explicitly).
-	static forProperty<I extends Record<string, unknown>>() {
+	// eslint-disable-next-line @typescript-eslint/ban-types
+	static forProperty<I extends object>() {
 		return function <K extends keyof I>(name: K): Lens<I, I[K]> {
 			const projector = (i: I): I[K] => i[name];
 			const updater = (i: I, newValue: I[K]): I => {
@@ -26,7 +27,8 @@ export class Lens<I, P> {
 	// `N in keyof K` is the type of numeric indices into K
 	// `{ [N in keyof K]: I[K[N]] }` is then the type of an object containing a partial representation of I
 	// with the exact properties named by the `names` with their corresponding types given by (inferred as) `K`.
-	static forProperties<I extends Record<string, unknown>>() {
+	// eslint-disable-next-line @typescript-eslint/ban-types
+	static forProperties<I extends object>() {
 		return function <K extends Array<keyof I>>(names: [...K]): Lens<I, {[N in keyof K]: I[K[N]]}> {
 			const projector = (i: I) => {
 				const tuple = [] as unknown as {[N in keyof K]: I[K[N]]};
@@ -55,7 +57,8 @@ export class Lens<I, P> {
 		};
 	}
 
-	static build<S extends Record<string | number | symbol, any>>() {
+	// eslint-disable-next-line @typescript-eslint/consistent-indexed-object-style
+	static build<S extends {[key: string | number | symbol]: any}>() {
 		return function<P extends Path<S>>(path: P): Lens<S, PropertyType<S, P>> {
 			const segments = path.split('.') as [keyof S, ...any];
 			const firstSegment = segments.shift() as keyof S;
@@ -71,7 +74,8 @@ export class Lens<I, P> {
 		};
 	}
 
-	static buildZipped<S extends Record<string | number | symbol, any>>() {
+	// eslint-disable-next-line @typescript-eslint/consistent-indexed-object-style
+	static buildZipped<S extends {[key: string | number | symbol]: any}>() {
 		return function<Q extends Array<Path<S>>>(paths: Q): Lens<S, {[N in keyof Q]: PropertyType<S, Q[N]>}> {
 			const individualLenses = paths.map(path => Lens.build<S>()(path));
 			const firstLens = individualLenses.shift() as Lens<S, PropertyType<S, Q[0]>>;
@@ -80,7 +84,7 @@ export class Lens<I, P> {
 		};
 	}
 
-	constructor(protected readonly get: (i: I) => P, protected readonly update: (i: I, p: P) => I) {}
+	constructor(public readonly get: (i: I) => P, public readonly update: (i: I, p: P) => I) {}
 
 	map<P2>(f: (p: P) => P2, g: (p: P, p2: P2) => P): Lens<I, P2> {
 		return new Lens(

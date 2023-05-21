@@ -1,3 +1,4 @@
+/* eslint-disable */
 import {describe, expect, test} from '@jest/globals';
 import { State, state, stateFrom } from '../../src/State';
 
