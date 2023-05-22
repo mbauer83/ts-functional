@@ -1,4 +1,6 @@
 /* eslint-disable max-nested-callbacks */
+import {type AsyncIO} from './AsyncIO';
+import {type AsyncTask} from './AsyncTask';
 import {type AsyncContravariantFunctor} from './Contravariant';
 import {type Either, Left, Right} from './Either';
 import {type AsyncMonad} from './Monad';
@@ -6,6 +8,91 @@ import {MonadicPromise} from './MonadicPromise';
 
 export class AsyncComputation<I, E, O> implements AsyncMonad<O>, AsyncContravariantFunctor<I> {
 	constructor(public readonly evaluate: (input: I) => Promise<Either<E, O>>) {}
+
+	thenDo<O2>(f: (..._: any[]) => Promise<O2>): AsyncComputation<I, E, O2> {
+		const evaluate = async (input: I): Promise<Either<E, O2>> => {
+			const thisOutput = await this.evaluate(input);
+			if (thisOutput.isLeft()) {
+				return new Left<E, O2>(thisOutput.get());
+			}
+
+			const ioOutput = await f();
+			return new Right<E, O2>(ioOutput);
+		};
+
+		return new AsyncComputation<I, E, O2>(evaluate);
+	}
+
+	// eslint-disable-next-line @typescript-eslint/naming-convention
+	thenDoIO<O2>(io: AsyncIO<O2>): AsyncComputation<I, E, O2> {
+		const evaluate = async (input: I): Promise<Either<E, O2>> => {
+			const thisOutput = await this.evaluate(input);
+			if (thisOutput.isLeft()) {
+				return new Left<E, O2>(thisOutput.get());
+			}
+
+			const ioOutput = await io.evaluate();
+			return new Right<E, O2>(ioOutput);
+		};
+
+		return new AsyncComputation<I, E, O2>(evaluate);
+	}
+
+	thenDoWithNewError<E2, O2>(f: (..._: any[]) => Promise<Either<E2, O2>>): AsyncComputation<I, E | E2, O2> {
+		const evaluate = async (input: I): Promise<Either<E | E2, O2>> => {
+			const thisOutput = await this.evaluate(input);
+			if (thisOutput.isLeft()) {
+				return new Left<E | E2, O2>(thisOutput.get());
+			}
+
+			const ioOutput = await f();
+			return ioOutput;
+		};
+
+		return new AsyncComputation<I, E | E2, O2>(evaluate);
+	}
+
+	thenDoTask<E2, O2>(task: AsyncTask<E2, O2>): AsyncComputation<I, E | E2, O2> {
+		const evaluate = async (input: I): Promise<Either<E | E2, O2>> => {
+			const thisOutput = await this.evaluate(input);
+			if (thisOutput.isLeft()) {
+				return new Left<E | E2, O2>(thisOutput.get());
+			}
+
+			const ioOutput = await task.evaluate();
+			return ioOutput;
+		};
+
+		return new AsyncComputation<I, E | E2, O2>(evaluate);
+	}
+
+	thenDoWithNewInputAndError<I2, E2, O2>(f: (input: I2) => Promise<Either<E2, O2>>): AsyncComputation<{i1: I; i2: I2}, E | E2, O2> {
+		const evaluate = async ({i1, i2}: {i1: I; i2: I2}): Promise<Either<E | E2, O2>> => {
+			const thisOutput = await this.evaluate(i1);
+			if (thisOutput.isLeft()) {
+				return new Left<E | E2, O2>(thisOutput.get());
+			}
+
+			const ioOutput = await f(i2);
+			return ioOutput;
+		};
+
+		return new AsyncComputation<{i1: I; i2: I2}, E | E2, O2>(evaluate);
+	}
+
+	thenDoComputation<I2, E2, O2>(computation: AsyncComputation<I2, E2, O2>): AsyncComputation<{i1: I; i2: I2}, E | E2, O2> {
+		const evaluate = async ({i1, i2}: {i1: I; i2: I2}): Promise<Either<E | E2, O2>> => {
+			const thisOutput = await this.evaluate(i1);
+			if (thisOutput.isLeft()) {
+				return new Left<E | E2, O2>(thisOutput.get());
+			}
+
+			const ioOutput = await computation.evaluate(i2);
+			return ioOutput;
+		};
+
+		return new AsyncComputation<{i1: I; i2: I2}, E | E2, O2>(evaluate);
+	}
 
 	contramap<I2>(f: (input: I2) => Promise<I>): AsyncComputation<I2, E, O> {
 		const evaluate = async (input: I2): Promise<Either<E, O>> => {

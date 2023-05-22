@@ -1,10 +1,113 @@
 /* eslint-disable max-nested-callbacks */
 import {type ContravariantFunctor} from './Contravariant';
-import {type Either, Right} from './Either';
+import {type Either, Right, Left} from './Either';
+import {IO} from './IO';
 import {type Monad} from './Monad';
+import {type Task} from './Task';
 
 export class Computation<Input, Error, Output> implements Monad<Output>, ContravariantFunctor<Input> {
 	constructor(public readonly evaluate: (input: Input) => Either<Error, Output>) {}
+
+	thenDo<O2>(f: (x: Output) => O2): Computation<Input, Error, O2> {
+		const evaluate = (input: Input) => {
+			const either = this.evaluate(input);
+			if (either.isLeft()) {
+				return new Left<Error, O2>(either.get());
+			}
+
+			return new Right<Error, O2>(f(either.get() as Output));
+		};
+
+		return new Computation<Input, Error, O2>(evaluate);
+	}
+
+	// eslint-disable-next-line @typescript-eslint/naming-convention
+	thenDoIO<O2>(io: IO<O2>): IO<O2> {
+		const resolver = (input: Input) => {
+			this.evaluate(input);
+			return io.evaluate();
+		};
+
+		return new IO(resolver);
+	}
+
+	thenDoWithNewError<E2, O2>(f: (x: Output) => Either<E2, O2>): Computation<Input, Error | E2, O2> {
+		const evaluate = (input: Input) => {
+			const either = this.evaluate(input);
+			if (either.isLeft()) {
+				return new Left<Error | E2, O2>(either.get());
+			}
+
+			return f(either.get() as Output);
+		};
+
+		return new Computation<Input, Error | E2, O2>(evaluate);
+	}
+
+	thenDoTask<E2, O2>(task: Task<E2, O2>): Computation<Input, Error | E2, O2> {
+		const evaluate = (input: Input) => {
+			const either = this.evaluate(input);
+			if (either.isLeft()) {
+				return new Left<Error | E2, O2>(either.get());
+			}
+
+			return task.evaluate();
+		};
+
+		return new Computation<Input, Error | E2, O2>(evaluate);
+	}
+
+	thenDoWithSameInputAndNewError<E2, O2>(f: (input: Input) => Either<E2, O2>): Computation<Input, Error | E2, O2> {
+		const evaluate = (input: Input) => {
+			const either = this.evaluate(input);
+			if (either.isLeft()) {
+				return new Left<Error | E2, O2>(either.get());
+			}
+
+			return f(input);
+		};
+
+		return new Computation<Input, Error | E2, O2>(evaluate);
+	}
+
+	thenDoComputationWithSameInput<E2, O2>(c: Computation<Input, E2, O2>): Computation<Input, Error | E2, O2> {
+		const evaluate = (input: Input) => {
+			const either = this.evaluate(input);
+			if (either.isLeft()) {
+				return new Left<Error | E2, O2>(either.get());
+			}
+
+			return c.evaluate(input);
+		};
+
+		return new Computation<Input, Error | E2, O2>(evaluate);
+	}
+
+	thenDoWithNewInputAndError<I2, E2, O2>(f: (input: I2) => Either<E2, O2>): Computation<{i1: Input; i2: I2}, Error | E2, O2> {
+		const evaluate = ({i1, i2}: {i1: Input; i2: I2}) => {
+			const either = this.evaluate(i1);
+			if (either.isLeft()) {
+				return new Left<Error | E2, O2>(either.get());
+			}
+
+			return f(i2);
+		};
+
+		return new Computation<{i1: Input; i2: I2}, Error | E2, O2>(evaluate);
+	}
+
+	thenDoComputation<I2, E2, O2>(c: Computation<I2, E2, O2>): Computation<{i1: Input; i2: I2}, Error | E2, O2> {
+		const evaluate = ({i1, i2}: {i1: Input; i2: I2}) => {
+			const either = this.evaluate(i1);
+			if (either.isLeft()) {
+				return new Left<Error | E2, O2>(either.get());
+			}
+
+			return c.evaluate(i2);
+		};
+
+		return new Computation<{i1: Input; i2: I2}, Error | E2, O2>(evaluate);
+	}
 
 	map<Output2>(f: (x: Output) => Output2): Computation<Input, Error, Output2> {
 		const evaluate = (input: Input) => this.map(f).evaluate(input);

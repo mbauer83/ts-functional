@@ -1,9 +1,89 @@
 /* eslint-disable max-nested-callbacks */
-import {type Either, Right} from './Either';
+import {Computation} from './Computation';
+import {type Either, Right, Left} from './Either';
 import {type Monad} from './Monad';
 
 export class Task<Error, Output> implements Monad<Output> {
-	constructor(public readonly evaluate: (_: any) => Either<Error, Output>) {}
+	constructor(public readonly evaluate: (..._: any[]) => Either<Error, Output>) {}
+
+	thenDo<O2>(f: (..._: any[]) => O2): Task<Error, O2> {
+		const resolver = (..._: any[]) => {
+			const ownResult = this.evaluate();
+			if (ownResult.isLeft()) {
+				return new Left<Error, O2>(ownResult.get());
+			}
+
+			return new Right<Error, O2>(f());
+		};
+
+		return new Task(resolver);
+	}
+
+	// eslint-disable-next-line @typescript-eslint/naming-convention
+	thenDoIO<O2>(io: Task<Error, O2>): Task<Error, O2> {
+		const resolver = (..._: any[]) => {
+			this.evaluate();
+			return io.evaluate();
+		};
+
+		return new Task(resolver);
+	}
+
+	thenDoWithNewError<E2, O2>(f: (..._: any[]) => Either<E2, O2>): Task<Error | E2, O2> {
+		const resolver = (..._: any[]) => {
+			const ownResult = this.evaluate();
+			if (ownResult.isLeft()) {
+				return new Left<Error | E2, O2>(ownResult.get());
+			}
+
+			return f();
+		};
+
+		return new Task(resolver);
+	}
+
+	thenDoTask<E2, O2>(task: Task<E2, O2>): Task<Error | E2, O2> {
+		const resolver = (..._: any[]) => {
+			const ownResult = this.evaluate();
+			if (ownResult.isLeft()) {
+				return new Left<Error | E2, O2>(ownResult.get());
+			}
+
+			return task.evaluate();
+		};
+
+		return new Task(resolver);
+	}
+
+	thenDoWithNewInputAndError<I, E2, O2>(
+		f: (input: I) => Either<E2, O2>,
+	): Computation<I, Error | E2, O2> {
+		const resolver = (input: I) => {
+			const ownResult = this.evaluate();
+			if (ownResult.isLeft()) {
+				return new Left<Error | E2, O2>(ownResult.get());
+			}
+
+			return f(input);
+		};
+
+		return new Computation(resolver);
+	}
+
+	thenDoComputation<I, E2, O2>(
+		computation: Computation<I, E2, O2>,
+	): Computation<I, Error | E2, O2> {
+		const resolver = (input: I) => {
+			const ownResult = this.evaluate();
+			if (ownResult.isLeft()) {
+				return new Left<Error | E2, O2>(ownResult.get());
+			}
+
+			return computation.evaluate(input);
+		};
+
+		return new Computation(resolver);
+	}
 
 	map<Output2>(f: (output: Output) => Output2): Task<Error, Output2> {
 		return new Task<Error, Output2>(input => this.evaluate(input).map(o => f(o)));

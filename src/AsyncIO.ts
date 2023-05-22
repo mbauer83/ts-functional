@@ -1,8 +1,70 @@
+import {AsyncComputation} from './AsyncComputation';
+import {AsyncTask} from './AsyncTask';
+import {type Either} from './Either';
 import {type AsyncMonad} from './Monad';
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export class AsyncIO<T> implements AsyncMonad<T> {
 	constructor(public readonly evaluate: (..._: any[]) => Promise<T>) {}
+
+	thenDo<U>(f: (..._: any[]) => Promise<U>): AsyncIO<U> {
+		const resolver = async (..._: any[]) => {
+			await this.evaluate();
+			return f();
+		};
+
+		return new AsyncIO(resolver);
+	}
+
+	// eslint-disable-next-line @typescript-eslint/naming-convention
+	thenDoIO<U>(io: AsyncIO<U>): AsyncIO<U> {
+		const resolver = async (..._: any[]) => {
+			await this.evaluate();
+			return io.evaluate();
+		};
+
+		return new AsyncIO(resolver);
+	}
+
+	thenDoWithError<E, U>(f: (..._: any[]) => Promise<Either<E, U>>): AsyncTask<E, U> {
+		const resolver = async (..._: any[]) => {
+			await this.evaluate();
+			return f();
+		};
+
+		return new AsyncTask(resolver);
+	}
+
+	thenDoTask<E2, O2>(task: AsyncTask<E2, O2>): AsyncTask<E2, O2> {
+		const resolver = async (..._: any[]) => {
+			await this.evaluate();
+			return task.evaluate();
+		};
+
+		return new AsyncTask(resolver);
+	}
+
+	thenDoWithNewInputAndError<I, E2, O2>(
+		f: (input: I) => Promise<Either<E2, O2>>,
+	): AsyncComputation<I, E2, O2> {
+		const resolver = async (input: I) => {
+			await this.evaluate();
+			return f(input);
+		};
+
+		return new AsyncComputation(resolver);
+	}
+
+	thenDoComputation<I, E2, O2>(
+		computation: AsyncComputation<I, E2, O2>,
+	): AsyncComputation<I, E2, O2> {
+		const resolver = async (input: I) => {
+			await this.evaluate();
+			return computation.evaluate(input);
+		};
+
+		return new AsyncComputation(resolver);
+	}
 
 	map<U>(f: (x: T) => Promise<U>): AsyncIO<U> {
 		const evaluate = async () => f(await this.evaluate());

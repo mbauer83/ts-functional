@@ -1,8 +1,70 @@
+import {Computation} from './Computation.js';
+import {type Either} from './Either.js';
 import {type Monad} from './Monad.js';
+import {Task} from './Task.js';
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export class IO<T> implements Monad<T> {
 	constructor(public readonly evaluate: (..._: any[]) => T) {}
+
+	thenDo<U>(f: (..._: any[]) => U): IO<U> {
+		const resolver = (..._: any[]) => {
+			this.evaluate();
+			return f();
+		};
+
+		return new IO(resolver);
+	}
+
+	// eslint-disable-next-line @typescript-eslint/naming-convention
+	thenDoIO<U>(io: IO<U>): IO<U> {
+		const resolver = (..._: any[]) => {
+			this.evaluate();
+			return io.evaluate();
+		};
+
+		return new IO(resolver);
+	}
+
+	thenDoWithError<E, U>(f: (..._: any[]) => Either<E, U>): Task<E, U> {
+		const resolver = (..._: any[]) => {
+			this.evaluate();
+			return f();
+		};
+
+		return new Task(resolver);
+	}
+
+	thenDoTask<E2, O2>(task: Task<E2, O2>): Task<E2, O2> {
+		const resolver = (..._: any[]) => {
+			this.evaluate();
+			return task.evaluate();
+		};
+
+		return new Task(resolver);
+	}
+
+	thenDoWithInputAndNewError<I, E2, O2>(
+		f: (input: I) => Either<E2, O2>,
+	): Computation<I, E2, O2> {
+		const resolver = (input: I) => {
+			this.evaluate();
+			return f(input);
+		};
+
+		return new Computation(resolver);
+	}
+
+	thenDoComputation<I, E2, O2>(
+		computation: Computation<I, E2, O2>,
+	): Computation<I, E2, O2> {
+		const resolver = (input: I) => {
+			this.evaluate();
+			return computation.evaluate(input);
+		};
+
+		return new Computation(resolver);
+	}
 
 	map<U>(f: (x: T) => U): IO<U> {
 		const evaluate = () => f(this.evaluate());
