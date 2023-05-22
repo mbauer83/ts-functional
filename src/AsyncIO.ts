@@ -2,7 +2,7 @@ import {type AsyncMonad} from './Monad';
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export class AsyncIO<T> implements AsyncMonad<T> {
-	constructor(public readonly evaluate: () => Promise<T>) {}
+	constructor(public readonly evaluate: (..._: any[]) => Promise<T>) {}
 
 	map<U>(f: (x: T) => Promise<U>): AsyncIO<U> {
 		const evaluate = async () => f(await this.evaluate());

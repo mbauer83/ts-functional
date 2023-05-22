@@ -2,7 +2,7 @@ import {type Monad} from './Monad.js';
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export class IO<T> implements Monad<T> {
-	constructor(public readonly evaluate: () => T) {}
+	constructor(public readonly evaluate: (..._: any[]) => T) {}
 
 	map<U>(f: (x: T) => U): IO<U> {
 		const evaluate = () => f(this.evaluate());
