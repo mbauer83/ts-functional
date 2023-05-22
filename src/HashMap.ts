@@ -171,7 +171,7 @@ export class HashMap<S extends string | number | symbol, T> implements MonadicHa
 		return new HashMap<S, U>(...newPairs);
 	}
 
-	apply<U>(f: MonadicHashMap<S, (x: T) => U>): MonadicHashMap<S, U> {
+	apply<U>(f: MonadicHashMap<S, (x: T) => U>): HashMap<S, U> {
 		const newPairs: Array<[S, U]> = [];
 		for (const [k, v] of this._map.entries()) {
 			const func = f.get(k);

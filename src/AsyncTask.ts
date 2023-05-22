@@ -19,7 +19,21 @@ export class AsyncTask<E, O> implements AsyncMonad<O> {
 	}
 
 	apply<O2>(f: AsyncTask<E, (x: O) => O2>): AsyncTask<E, O2> {
-		return f.flatMap(g => this.map(g));
+		const evaluate = async (input: any): Promise<Either<E, O2>> => {
+			const output = await this.evaluate(input);
+			if (output.isLeft()) {
+				return new Left(output.get()) as Either<E, O2>;
+			}
+
+			const func = await f.evaluate(input);
+			if (func.isLeft()) {
+				return new Left(func.get()) as Either<E, O2>;
+			}
+
+			return new Right((func.get() as ((x: O) => O2))(output.get() as O)) as Either<E, O2>;
+		};
+
+		return new AsyncTask(evaluate);
 	}
 
 	pure<O2>(x: Promise<O2>): AsyncTask<any, O2> {
