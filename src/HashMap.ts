@@ -5,7 +5,7 @@ import {type Either, Left, Right} from './Either.js';
 import {everyFilterable, type Filterable, noneFilterable, someFilterable} from './Filterable.js';
 import {type Monad} from './Monad.js';
 import {type Monoid} from './Monoid.js';
-import {None, type Optional, type Some, optionalFromValue} from './Optional.js';
+import {type Optional, type Some, optionalFromValue} from './Optional.js';
 import {type Predicate} from './Predicate.js';
 
 export interface MonadicHashMap<S extends string | number | symbol, T> extends Monad<T>, Monoid<MonadicHashMap<S, T>>, Filterable<[S, T]>, HasCount {
@@ -188,7 +188,7 @@ export class HashMap<S extends string | number | symbol, T> implements MonadicHa
 		return new HashMap<number, U>([0, x]);
 	}
 
-	flatMap<U>(f: (x: T) => HashMap<S, U>): HashMap<S, U[]> {
+	flatMap<U>(f: (x: T) => MonadicHashMap<S, U>): HashMap<S, U[]> {
 		const newPairs: Array<[S, U[]]> = [];
 		for (const [k, v] of this._map.entries()) {
 			const map = f(v);

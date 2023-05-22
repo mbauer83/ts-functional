@@ -177,7 +177,7 @@ export class ConditionalExecution<T, E> implements Monad<T> {
 		const newOtherwise: (...args: any[]) => [E, E2, E3]
             = (...args: any[]) => [
             	this.otherwise(...args),
-            	o1.otherwise(...args),
+      	     	o1.otherwise(...args),
             	o2.otherwise(...args),
             ];
 		return new ConditionalExecution<[T, T2, T3], [E, E2, E3]>(
