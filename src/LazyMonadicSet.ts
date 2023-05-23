@@ -1,5 +1,5 @@
 import {MonadicSet} from './MonadicSet.js';
-import {type Predicate} from './Predicate.js';
+import {type PredicateOrFn} from './Predicate.js';
 
 export class LazyMonadicSet<T> extends MonadicSet<T> {
 	protected resolved: undefined | MonadicSet<T> = undefined;
@@ -8,7 +8,7 @@ export class LazyMonadicSet<T> extends MonadicSet<T> {
 		super();
 	}
 
-	filter(p: Predicate<T>): LazyMonadicSet<T> {
+	filter(p: PredicateOrFn<T>): LazyMonadicSet<T> {
 		const resolver = () => {
 			const resolved = this.getResolved();
 			// `p` is a predicate, and this custom method takes only predicates
@@ -20,19 +20,19 @@ export class LazyMonadicSet<T> extends MonadicSet<T> {
 		return new LazyMonadicSet(resolver);
 	}
 
-	every(p: Predicate<T>): boolean {
+	every(p: PredicateOrFn<T>): boolean {
 		// `p` is a predicate, and this custom method takes only predicates
 		// eslint-disable-next-line unicorn/no-array-callback-reference
 		return this.getResolved().every(p);
 	}
 
-	some(p: Predicate<T>): boolean {
+	some(p: PredicateOrFn<T>): boolean {
 		// `p` is a predicate, and this custom method takes only predicates
 		// eslint-disable-next-line unicorn/no-array-callback-reference
 		return this.getResolved().some(p);
 	}
 
-	none(p: Predicate<T>): boolean {
+	none(p: PredicateOrFn<T>): boolean {
 		return this.getResolved().none(p);
 	}
 

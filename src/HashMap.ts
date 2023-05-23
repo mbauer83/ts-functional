@@ -6,7 +6,7 @@ import {everyFilterable, type Filterable, noneFilterable, someFilterable} from '
 import {type Monad} from './Monad.js';
 import {type Monoid} from './Monoid.js';
 import {type Optional, type Some, optionalFromValue} from './Optional.js';
-import {type Predicate} from './Predicate.js';
+import {type PredicateOrFn, evaluatePredicate} from './Predicate.js';
 
 export interface MonadicHashMap<S extends string | number | symbol, T> extends Monad<T>, Monoid<MonadicHashMap<S, T>>, Filterable<[S, T]>, HasCount {
 	op: (l: MonadicHashMap<S, T>, r: MonadicHashMap<S, T>) => MonadicHashMap<S, T>;
@@ -27,10 +27,10 @@ export interface MonadicHashMap<S extends string | number | symbol, T> extends M
 	zip6<U, V, W, X, Y, Z>(o1: MonadicHashMap<S, U>, o2: MonadicHashMap<S, V>, o3: MonadicHashMap<S, W>, o4: MonadicHashMap<S, X>, o5: MonadicHashMap<S, Y>, o6: MonadicHashMap<S, Z>): MonadicHashMap<S, [T, U, V, W, X, Y, Z]>;
 	zip6WithAllValues<U, V, W, X, Y, Z>(o1: MonadicHashMap<S, U>, o2: MonadicHashMap<S, V>, o3: MonadicHashMap<S, W>, o4: MonadicHashMap<S, X>, o5: MonadicHashMap<S, Y>, o6: MonadicHashMap<S, Z>): MonadicHashMap<S, Map<string, T | U | V | W | X | Y | Z>>;
 	flatMap<U>(f: (t: T) => MonadicHashMap<S, U>): MonadicHashMap<S, U[]>;
-	filter(p: Predicate<[S, T]>): MonadicHashMap<S, T>;
-	every(p: Predicate<[S, T]>): boolean;
-	some(p: Predicate<[S, T]>): boolean;
-	none(p: Predicate<[S, T]>): boolean;
+	filter(p: PredicateOrFn<[S, T]>): MonadicHashMap<S, T>;
+	every(p: PredicateOrFn<[S, T]>): boolean;
+	some(p: PredicateOrFn<[S, T]>): boolean;
+	none(p: PredicateOrFn<[S, T]>): boolean;
 	getAsMap(): Map<S, T>;
 	getSize(): number;
 	has(key: S): boolean;
@@ -68,10 +68,10 @@ export class HashMap<S extends string | number | symbol, T> implements MonadicHa
 		return this.empty;
 	}
 
-	filter(p: Predicate<[S, T]>): HashMap<S, T> {
+	filter(p: PredicateOrFn<[S, T]>): HashMap<S, T> {
 		let filtered = new HashMap<S, T>();
 		for (const [k, v] of this._map.entries()) {
-			if (p.evaluate([k, v])) {
+			if (evaluatePredicate(p, [k, v])) {
 				filtered = filtered.withEntry(k, v);
 			}
 		}
@@ -79,15 +79,15 @@ export class HashMap<S extends string | number | symbol, T> implements MonadicHa
 		return filtered;
 	}
 
-	every(p: Predicate<[S, T]>): boolean {
+	every(p: PredicateOrFn<[S, T]>): boolean {
 		return everyFilterable(this, p);
 	}
 
-	some(p: Predicate<[S, T]>): boolean {
+	some(p: PredicateOrFn<[S, T]>): boolean {
 		return someFilterable(this, p);
 	}
 
-	none(p: Predicate<[S, T]>): boolean {
+	none(p: PredicateOrFn<[S, T]>): boolean {
 		return noneFilterable(this, p);
 	}
 

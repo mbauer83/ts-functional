@@ -3,7 +3,7 @@ import {type HasCount} from '@mbauer83/ts-utils/src/size/HasCount.js';
 import {type Monad} from './Monad.js';
 import {type Monoid} from './Monoid.js';
 import {everyFilterable, type Filterable, noneFilterable, someFilterable} from './Filterable.js';
-import {type Predicate} from './Predicate.js';
+import {type PredicateOrFn, evaluatePredicate} from './Predicate.js';
 
 export class List<T> implements Monad<T>, Monoid<List<T>>, Filterable<T>, EqualityComparable<List<T>>, HasCount {
 	static empty<T2>(): List<T2> {
@@ -44,9 +44,9 @@ export class List<T> implements Monad<T>, Monoid<List<T>>, Filterable<T>, Equali
 		}
 	}
 
-	hasElementForPredicate(predicate: Predicate<T>): boolean {
+	hasElementForPredicate(predicate: PredicateOrFn<T>): boolean {
 		for (const thisValue of this) {
-			if (predicate.evaluate(thisValue)) {
+			if (evaluatePredicate(predicate, thisValue)) {
 				return true;
 			}
 		}
@@ -100,10 +100,10 @@ export class List<T> implements Monad<T>, Monoid<List<T>>, Filterable<T>, Equali
 		return this.list.reduce((u, t, _) => reducer(u, t), initial);
 	}
 
-	filter(p: Predicate<T>): List<T> {
+	filter(predicate: PredicateOrFn<T>): List<T> {
 		const newArray: T[] = [];
 		for (const element of this.list) {
-			if (p.evaluate(element)) {
+			if (evaluatePredicate(predicate, element)) {
 				newArray.push(element);
 			}
 		}
@@ -111,15 +111,15 @@ export class List<T> implements Monad<T>, Monoid<List<T>>, Filterable<T>, Equali
 		return new List(newArray);
 	}
 
-	every(p: Predicate<T>): boolean {
+	every(p: PredicateOrFn<T>): boolean {
 		return everyFilterable(this, p);
 	}
 
-	some(p: Predicate<T>): boolean {
+	some(p: PredicateOrFn<T>): boolean {
 		return someFilterable(this, p);
 	}
 
-	none(p: Predicate<T>): boolean {
+	none(p: PredicateOrFn<T>): boolean {
 		return noneFilterable(this, p);
 	}
 

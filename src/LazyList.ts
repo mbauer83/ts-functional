@@ -1,5 +1,5 @@
 import {List} from './List.js';
-import {type Predicate} from './Predicate.js';
+import {evaluatePredicate, type PredicateOrFn} from './Predicate.js';
 
 export class LazyList<T> extends List<T> {
 	static combine<U>(l: List<U>, r: List<U>): LazyList<U> {
@@ -29,10 +29,10 @@ export class LazyList<T> extends List<T> {
 		this.getResolved().forEach(callbackFn);
 	}
 
-	hasElementForPredicate(predicate: Predicate<T>): boolean {
+	hasElementForPredicate(predicate: PredicateOrFn<T>): boolean {
 		const list = this.getResolved();
 		for (const value of list) {
-			if (predicate.evaluate(value)) {
+			if (evaluatePredicate(predicate, value)) {
 				return true;
 			}
 		}
@@ -95,25 +95,25 @@ export class LazyList<T> extends List<T> {
 		return this.getResolved().reduce(reducer, initial);
 	}
 
-	filter(p: Predicate<T>): LazyList<T> {
+	filter(p: PredicateOrFn<T>): LazyList<T> {
 		// `p` is a predicate, and this custom method takes only predicates
 		// eslint-disable-next-line unicorn/no-array-callback-reference
 		return new LazyList(() => this.getResolved().filter(p), () => []);
 	}
 
-	every(p: Predicate<T>): boolean {
+	every(p: PredicateOrFn<T>): boolean {
 		// `p` is a predicate, and this custom method takes only predicates
 		// eslint-disable-next-line unicorn/no-array-callback-reference
 		return this.getResolved().every(p);
 	}
 
-	some(p: Predicate<T>): boolean {
+	some(p: PredicateOrFn<T>): boolean {
 		// `p` is a predicate, and this custom method takes only predicates
 		// eslint-disable-next-line unicorn/no-array-callback-reference
 		return this.getResolved().some(p);
 	}
 
-	none(p: Predicate<T>): boolean {
+	none(p: PredicateOrFn<T>): boolean {
 		return this.getResolved().none(p);
 	}
 

@@ -2,7 +2,7 @@ import {type EqualityComparable} from '@mbauer83/ts-utils/src/comparison/equalit
 import {type HasCount} from '@mbauer83/ts-utils/src/size/HasCount.js';
 import {everyFilterable, type Filterable, noneFilterable, someFilterable} from './Filterable.js';
 import {type Monad} from './Monad.js';
-import {type Predicate} from './Predicate.js';
+import {type PredicateOrFn, evaluatePredicate} from './Predicate.js';
 import {None, type Optional, Some} from './Optional.js';
 
 export class MonadicStack<T> implements Monad<T>, EqualityComparable<MonadicStack<T>>, Filterable<T>, HasCount {
@@ -44,19 +44,19 @@ export class MonadicStack<T> implements Monad<T>, EqualityComparable<MonadicStac
 		return this.stack.length;
 	}
 
-	filter(p: Predicate<T>): MonadicStack<T> {
-		return new MonadicStack(...this.stack.filter(entry => p.evaluate(entry)));
+	filter(p: PredicateOrFn<T>): MonadicStack<T> {
+		return new MonadicStack(...this.stack.filter(entry => evaluatePredicate(p, entry)));
 	}
 
-	every(p: Predicate<T>): boolean {
+	every(p: PredicateOrFn<T>): boolean {
 		return everyFilterable(this, p);
 	}
 
-	some(p: Predicate<T>): boolean {
+	some(p: PredicateOrFn<T>): boolean {
 		return someFilterable(this, p);
 	}
 
-	none(p: Predicate<T>): boolean {
+	none(p: PredicateOrFn<T>): boolean {
 		return noneFilterable(this, p);
 	}
 

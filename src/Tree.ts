@@ -2,7 +2,7 @@ import {type EqualityComparable} from '@mbauer83/ts-utils/src/comparison/equalit
 import {List} from './List.js';
 import {type Monad} from './Monad.js';
 import {None, type Optional, Some} from './Optional.js';
-import {Predicate} from './Predicate.js';
+import {Predicate, evaluatePredicate, type PredicateOrFn} from './Predicate.js';
 import {type Either, Left, Right} from './Either.js';
 import {optionalToEither} from './optionalHelper.js';
 
@@ -200,44 +200,44 @@ export class Tree<T> implements Monad<T>, EqualityComparable<Tree<T>> {
      *
      *
      */
-	replaceNodesPreOrder(predicate: Predicate<Tree<T>>, generator: (node: Tree<T>) => Tree<T>): Tree<T> {
+	replaceNodesPreOrder(predicate: PredicateOrFn<Tree<T>>, generator: (node: Tree<T>) => Tree<T>): Tree<T> {
 		return this.replaceNodesByPredicateWithGeneratorInternal(predicate, generator, 'pre');
 	}
 
-	replaceNodesPostOrder(predicate: Predicate<Tree<T>>, generator: (node: Tree<T>) => Tree<T>): Tree<T> {
+	replaceNodesPostOrder(predicate: PredicateOrFn<Tree<T>>, generator: (node: Tree<T>) => Tree<T>): Tree<T> {
 		return this.replaceNodesByPredicateWithGeneratorInternal(predicate, generator, 'post');
 	}
 
-	replaceFirstMatchingNodePreOrder(predicate: Predicate<Tree<T>>, generator: (node: Tree<T>) => Tree<T>): Tree<T> {
+	replaceFirstMatchingNodePreOrder(predicate: PredicateOrFn<Tree<T>>, generator: (node: Tree<T>) => Tree<T>): Tree<T> {
 		return this.replaceNodeByPredicatewithGeneratorInternal(predicate, generator, 'pre', false);
 	}
 
-	replaceFirstMatchingNodePostOrder(predicate: Predicate<Tree<T>>, generator: (node: Tree<T>) => Tree<T>): Tree<T> {
+	replaceFirstMatchingNodePostOrder(predicate: PredicateOrFn<Tree<T>>, generator: (node: Tree<T>) => Tree<T>): Tree<T> {
 		return this.replaceNodeByPredicatewithGeneratorInternal(predicate, generator, 'post', false);
 	}
 
-	removeNodesPreOrder(predicate: Predicate<Tree<T>>): Optional<Tree<T>> {
+	removeNodesPreOrder(predicate: PredicateOrFn<Tree<T>>): Optional<Tree<T>> {
 		return this.removeNodesByPredicateInternal(predicate, 'pre');
 	}
 
-	removeNodesPostOrder(predicate: Predicate<Tree<T>>): Optional<Tree<T>> {
+	removeNodesPostOrder(predicate: PredicateOrFn<Tree<T>>): Optional<Tree<T>> {
 		return this.removeNodesByPredicateInternal(predicate, 'post');
 	}
 
-	removeFirstMatchingNodePreOrder(predicate: Predicate<Tree<T>>): Optional<Tree<T>> {
+	removeFirstMatchingNodePreOrder(predicate: PredicateOrFn<Tree<T>>): Optional<Tree<T>> {
 		return this.removeNodeByPredicateInternal(predicate, 'pre', false);
 	}
 
-	removeFirstMatchingNodePostOrder(predicate: Predicate<Tree<T>>): Optional<Tree<T>> {
+	removeFirstMatchingNodePostOrder(predicate: PredicateOrFn<Tree<T>>): Optional<Tree<T>> {
 		return this.removeNodeByPredicateInternal(predicate, 'post', false);
 	}
 
 	protected replaceNodesByPredicateWithGeneratorInternal(
-		predicate: Predicate<Tree<T>>,
+		predicate: PredicateOrFn<Tree<T>>,
 		generator: (node: Tree<T>) => Tree<T>,
 		traversalOrder: 'pre' | 'post',
 	): Tree<T> {
-		if (traversalOrder === 'pre' && predicate.evaluate(this)) {
+		if (traversalOrder === 'pre' && evaluatePredicate(predicate, this)) {
 			const newThis = generator(this);
 			const children = newThis.children.map(c => c.replaceNodesByPredicateWithGeneratorInternal(predicate, generator, traversalOrder));
 			return new Tree<T>(newThis.value, children);
@@ -246,7 +246,7 @@ export class Tree<T> implements Monad<T>, EqualityComparable<Tree<T>> {
 		if (traversalOrder === 'post') {
 			const children = this.children.map(c => c.replaceNodesByPredicateWithGeneratorInternal(predicate, generator, traversalOrder));
 			const newThis = new Tree<T>(this.value, children);
-			if (predicate.evaluate(newThis)) {
+			if (evaluatePredicate(predicate, newThis)) {
 				return generator(newThis);
 			}
 		}
@@ -255,7 +255,7 @@ export class Tree<T> implements Monad<T>, EqualityComparable<Tree<T>> {
 	}
 
 	protected replaceNodeByPredicatewithGeneratorInternal(
-		predicate: Predicate<Tree<T>>,
+		predicate: PredicateOrFn<Tree<T>>,
 		generator: (node: Tree<T>) => Tree<T>,
 		traversalOrder: 'pre' | 'post',
 		replaced: & boolean,
@@ -265,7 +265,7 @@ export class Tree<T> implements Monad<T>, EqualityComparable<Tree<T>> {
 		}
 
 		if (traversalOrder === 'pre') {
-			if (predicate.evaluate(this)) {
+			if (evaluatePredicate(predicate, this)) {
 				replaced = true;
 				return generator(this);
 			}
@@ -281,7 +281,7 @@ export class Tree<T> implements Monad<T>, EqualityComparable<Tree<T>> {
 		if (traversalOrder === 'post') {
 			const children = this.children.map(c => c.replaceNodeByPredicatewithGeneratorInternal(predicate, generator, traversalOrder, replaced));
 			const newThis = new Tree<T>(this.value, children);
-			if (!replaced && predicate.evaluate(newThis)) {
+			if (!replaced && evaluatePredicate(predicate, newThis)) {
 				replaced = true;
 				return generator(newThis);
 			}
@@ -292,9 +292,9 @@ export class Tree<T> implements Monad<T>, EqualityComparable<Tree<T>> {
 		return this;
 	}
 
-	protected removeNodeByPredicateInternal(predicate: Predicate<Tree<T>>, traversalOrder: 'pre' | 'post', removed: & boolean): Optional<Tree<T>> {
+	protected removeNodeByPredicateInternal(predicate: PredicateOrFn<Tree<T>>, traversalOrder: 'pre' | 'post', removed: & boolean): Optional<Tree<T>> {
 		if (traversalOrder === 'pre') {
-			if (predicate.evaluate(this)) {
+			if (evaluatePredicate(predicate, this)) {
 				removed = true;
 				return new None<Tree<T>>();
 			}
@@ -318,7 +318,7 @@ export class Tree<T> implements Monad<T>, EqualityComparable<Tree<T>> {
             	.map(c => c.getOrThrow('No value present.'));
 
 		const newThis = new Tree<T>(this.value, children);
-		if (!removed && predicate.evaluate(newThis)) {
+		if (!removed && evaluatePredicate(predicate, newThis)) {
 			removed = true;
 			return new None<Tree<T>>();
 		}
@@ -326,9 +326,9 @@ export class Tree<T> implements Monad<T>, EqualityComparable<Tree<T>> {
 		return new Some<Tree<T>>(newThis);
 	}
 
-	protected removeNodesByPredicateInternal(predicate: Predicate<Tree<T>>, traversalOrder: 'pre' | 'post'): Optional<Tree<T>> {
+	protected removeNodesByPredicateInternal(predicate: PredicateOrFn<Tree<T>>, traversalOrder: 'pre' | 'post'): Optional<Tree<T>> {
 		if (traversalOrder === 'pre') {
-			if (predicate.evaluate(this)) {
+			if (evaluatePredicate(predicate, this)) {
 				return new None<Tree<T>>();
 			}
 
@@ -352,17 +352,17 @@ export class Tree<T> implements Monad<T>, EqualityComparable<Tree<T>> {
             	.filter(c => c.isSome())
             	.map(c => c.getOrThrow('No value present.'));
 		const newThis = originalChildrenCount > children.length ? new Tree<T>(this.value, children) : this;
-		if (predicate.evaluate(newThis)) {
+		if (evaluatePredicate(predicate, newThis)) {
 			return new None<Tree<T>>();
 		}
 
 		return new Some<Tree<T>>(newThis);
 	}
 
-	protected findAllMatches(p: Predicate<Tree<T>>, traversalOrder: 'pre' | 'post'): List<Tree<T>> {
+	protected findAllMatches(p: PredicateOrFn<Tree<T>>, traversalOrder: 'pre' | 'post'): List<Tree<T>> {
 		const matches: List<Tree<T>> = new List<Tree<T>>([]);
 		if (traversalOrder === 'pre') {
-			if (p.evaluate(this)) {
+			if (evaluatePredicate(p, this)) {
 				matches.push(this);
 			}
 
@@ -374,7 +374,7 @@ export class Tree<T> implements Monad<T>, EqualityComparable<Tree<T>> {
 				matches.push(...c.findAllMatches(p, traversalOrder));
 			}
 
-			if (p.evaluate(this)) {
+			if (evaluatePredicate(p, this)) {
 				matches.push(this);
 			}
 		}
@@ -382,8 +382,8 @@ export class Tree<T> implements Monad<T>, EqualityComparable<Tree<T>> {
 		return matches;
 	}
 
-	protected findFirstMatchPreorder(p: Predicate<Tree<T>>): Optional<Tree<T>> {
-		if (p.evaluate(this)) {
+	protected findFirstMatchPreorder(p: PredicateOrFn<Tree<T>>): Optional<Tree<T>> {
+		if (evaluatePredicate(p, this)) {
 			return new Some<Tree<T>>(this);
 		}
 
@@ -406,7 +406,7 @@ export class Tree<T> implements Monad<T>, EqualityComparable<Tree<T>> {
 		return new None<Tree<T>>();
 	}
 
-	protected findFirstMatchPostorder(p: Predicate<Tree<T>>): Optional<Tree<T>> {
+	protected findFirstMatchPostorder(p: PredicateOrFn<Tree<T>>): Optional<Tree<T>> {
 		let found: Some<Tree<T>> | undefined;
 		for (const child of this.children) {
 			const matched = child.findFirstMatchPostorder(p);
@@ -423,7 +423,7 @@ export class Tree<T> implements Monad<T>, EqualityComparable<Tree<T>> {
 			}
 		}
 
-		if (p.evaluate(this)) {
+		if (evaluatePredicate(p, this)) {
 			return new Some<Tree<T>>(this);
 		}
 
@@ -431,10 +431,10 @@ export class Tree<T> implements Monad<T>, EqualityComparable<Tree<T>> {
 	}
 
 	protected moveChildNode(
-		parentPredicate: Predicate<Tree<T>>,
+		parentPredicate: PredicateOrFn<Tree<T>>,
 		currChildIdx: number,
 		newChildIdx: number,
-		newParentPredicate: Optional<Predicate<Tree<T>>> = new None<Predicate<Tree<T>>>(),
+		newParentPredicate: Optional<PredicateOrFn<Tree<T>>> = new None<PredicateOrFn<Tree<T>>>(),
 	): Either<Error, Tree<T>> {
 		if (newParentPredicate === null && newChildIdx === currChildIdx) {
 			return new Right<Error, Tree<T>>(this);

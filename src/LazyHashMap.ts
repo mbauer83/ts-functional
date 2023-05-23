@@ -2,11 +2,11 @@ import {QueriedValueNotPresent, type Throwable} from './definitions.js';
 import {type Either, Left, Right} from './Either.js';
 import {HashMap, type MonadicHashMap} from './HashMap.js';
 import {type Optional} from './Optional.js';
-import {type Predicate} from './Predicate.js';
+import {type PredicateOrFn} from './Predicate.js';
 
 export interface LazyMonadicHashMap<S extends string | number | symbol, T> extends MonadicHashMap<S, T> {
 	id(): LazyMonadicHashMap<S, T>;
-	filter(p: Predicate<[S, T]>): LazyMonadicHashMap<S, T>;
+	filter(p: PredicateOrFn<[S, T]>): LazyMonadicHashMap<S, T>;
 	withEntry(key: S, value: T): LazyMonadicHashMap<S, T>;
 	withoutEntry(key: S): LazyMonadicHashMap<S, T>;
 	withEntries(...pairs: Array<[S, T]>): LazyMonadicHashMap<S, T>;
@@ -82,25 +82,25 @@ export class LazyHashMap<S extends string | number | symbol, T> implements LazyM
 		return this.lazyEmpty;
 	}
 
-	filter(p: Predicate<[S, T]>): LazyHashMap<S, T> {
+	filter(p: PredicateOrFn<[S, T]>): LazyHashMap<S, T> {
 		// `p` is a predicate, and this custom method takes only predicates
 		// eslint-disable-next-line unicorn/no-array-callback-reference
 		return new LazyHashMap<S, T>(() => this.getResolved().filter(p).getAsMap());
 	}
 
-	every(p: Predicate<[S, T]>): boolean {
+	every(p: PredicateOrFn<[S, T]>): boolean {
 		// `p` is a predicate, and this custom method takes only predicates
 		// eslint-disable-next-line unicorn/no-array-callback-reference
 		return this.getResolved().every(p);
 	}
 
-	some(p: Predicate<[S, T]>): boolean {
+	some(p: PredicateOrFn<[S, T]>): boolean {
 		// `p` is a predicate, and this custom method takes only predicates
 		// eslint-disable-next-line unicorn/no-array-callback-reference
 		return this.getResolved().some(p);
 	}
 
-	none(p: Predicate<[S, T]>): boolean {
+	none(p: PredicateOrFn<[S, T]>): boolean {
 		return this.getResolved().none(p);
 	}
 

@@ -1,7 +1,7 @@
 import {type EqualityComparable} from '@mbauer83/ts-utils/src/comparison/equality.js';
 import {everyFilterable, type Filterable, noneFilterable, someFilterable} from './Filterable.js';
 import {type Monad} from './Monad.js';
-import {type Predicate} from './Predicate.js';
+import {evaluatePredicate, type PredicateOrFn} from './Predicate.js';
 
 export class MonadicSet<T> implements Monad<T>, EqualityComparable<MonadicSet<T>>, Filterable<T> {
 	protected readonly innerSet: Set<T>;
@@ -12,20 +12,20 @@ export class MonadicSet<T> implements Monad<T>, EqualityComparable<MonadicSet<T>
 		this.size = this.innerSet.size;
 	}
 
-	filter(p: Predicate<T>): MonadicSet<T> {
-		const newElements = Array.from(this.innerSet.values()).filter(element => p.evaluate(element));
+	filter(p: PredicateOrFn<T>): MonadicSet<T> {
+		const newElements = Array.from(this.innerSet.values()).filter(element => evaluatePredicate(p, element));
 		return new MonadicSet(newElements);
 	}
 
-	every(p: Predicate<T>): boolean {
+	every(p: PredicateOrFn<T>): boolean {
 		return everyFilterable(this, p);
 	}
 
-	some(p: Predicate<T>): boolean {
+	some(p: PredicateOrFn<T>): boolean {
 		return someFilterable(this, p);
 	}
 
-	none(p: Predicate<T>): boolean {
+	none(p: PredicateOrFn<T>): boolean {
 		return noneFilterable(this, p);
 	}
 
