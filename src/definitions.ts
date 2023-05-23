@@ -1,5 +1,9 @@
 import {type Applicative} from './Applicative';
 
+export type UnspecifiedFunction = (..._: any[]) => any;
+
+export type GenericFunction<I extends any[], O> = (..._: I[]) => O;
+
 export type Throwable = Error | string | ((...args: any[]) => Error) | ((...args: any[]) => string);
 
 export type SpreadableElement = boolean | number | string | symbol | undefined | Record<string, any> | SpreadableElement[];
