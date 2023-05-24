@@ -16,5 +16,5 @@
           "@mbauer83/ts-utils": ["../node_modules/@mbauer83/ts-utils/src/index.d.ts"]
       }
     },
-    "include": ["src/**/*.ts" ]
+    "include": ["src/**/*.ts", "examples/**/*.ts"]
 }
