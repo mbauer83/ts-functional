@@ -436,7 +436,7 @@ export class Tree<T> implements Monad<T>, EqualityComparable<Tree<T>> {
 		newChildIdx: number,
 		newParentPredicate: Optional<PredicateOrFn<Tree<T>>> = new None<PredicateOrFn<Tree<T>>>(),
 	): Either<Error, Tree<T>> {
-		if (newParentPredicate === null && newChildIdx === currChildIdx) {
+		if (newParentPredicate === null || newChildIdx === currChildIdx) {
 			return new Right<Error, Tree<T>>(this);
 		}
 
