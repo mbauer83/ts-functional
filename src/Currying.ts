@@ -17,11 +17,11 @@ function curry1<A, O>(f: (a: A, ..._: any[]) => O): ((a: A) => (...rest: Spreada
 }
 
 export function curry<F extends ((..._: any) => any)>(f: F): Curried<F> {
-	let hasMoreArgs = Reflect.has(f, 'length') && f.length > 1;
+	let hasMoreArgs = f.length > 1;
 	let currFn: (..._: any[]) => any = f;
 	while (hasMoreArgs) {
 		currFn = curry1(currFn);
-		hasMoreArgs = Reflect.has(currFn, 'length') && currFn.length > 1;
+		hasMoreArgs = currFn.length > 1;
 	}
 
 	return currFn as unknown as Curried<F>;
