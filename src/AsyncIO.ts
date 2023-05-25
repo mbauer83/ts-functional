@@ -66,6 +66,16 @@ export class AsyncIO<T> implements AsyncMonad<T> {
 		return new AsyncComputation(resolver);
 	}
 
+	mapToTask<E, U>(f: (x: T) => Promise<Either<E, U>>): AsyncTask<E, U> {
+		const evaluate = async () => f(await this.evaluate());
+		return new AsyncTask<E, U>(evaluate);
+	}
+
+	mapToComputation<I, E, U>(f: (x: T) => (i: I) => Promise<Either<E, U>>): AsyncComputation<I, E, U> {
+		const evaluate = async (i: I) => f(await this.evaluate())(i);
+		return new AsyncComputation<I, E, U>(evaluate);
+	}
+
 	map<U>(f: (x: T) => Promise<U>): AsyncIO<U> {
 		const evaluate = async () => f(await this.evaluate());
 		return new AsyncIO(evaluate);

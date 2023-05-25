@@ -66,6 +66,16 @@ export class IO<T> implements Monad<T> {
 		return new Computation(resolver);
 	}
 
+	mapToTask<E, U>(f: (x: T) => Either<E, U>): Task<E, U> {
+		const evaluate = () => f(this.evaluate());
+		return new Task<E, U>(evaluate);
+	}
+
+	mapToComputation<I, E, U>(f: (x: T) => (i: I) => Either<E, U>): Computation<I, E, U> {
+		const evaluate = (i: I) => f(this.evaluate())(i);
+		return new Computation<I, E, U>(evaluate);
+	}
+
 	map<U>(f: (x: T) => U): IO<U> {
 		const evaluate = () => f(this.evaluate());
 		return new IO(evaluate);

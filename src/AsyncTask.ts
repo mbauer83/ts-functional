@@ -89,6 +89,19 @@ export class AsyncTask<E, O> implements AsyncMonad<O> {
 		return new AsyncComputation(evaluate);
 	}
 
+	mapToComputation<I, E2, U>(f: (x: O) => (i: I) => Promise<Either<E | E2, U>>): AsyncComputation<I, E | E2, U> {
+		const evaluate = async (i: I) => {
+			const thisValue = await this.evaluate();
+			if (thisValue.isLeft()) {
+				return thisValue as any as Either<E | E2, U>;
+			}
+
+			return f(thisValue.get() as O)(i);
+		};
+
+		return new AsyncComputation<I, E | E2, U>(evaluate);
+	}
+
 	map<O2>(f: (x: O) => Promise<O2>): AsyncTask<E, O2> {
 		const evaluate = async (input: any): Promise<Either<E, O2>> => {
 			const output = await this.evaluate(input);
