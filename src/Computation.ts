@@ -1,9 +1,9 @@
 /* eslint-disable max-nested-callbacks */
-import {type ContravariantFunctor} from './Contravariant';
-import {type Either, Right, Left} from './Either';
-import {IO} from './IO';
-import {type Monad} from './Monad';
-import {type Task} from './Task';
+import {type ContravariantFunctor} from './Contravariant.js';
+import {type Either, Right, Left} from './Either.js';
+import {IO} from './IO.js';
+import {type Monad} from './Monad.js';
+import {type Task} from './Task.js';
 
 export class Computation<Input, Error, Output> implements Monad<Output>, ContravariantFunctor<Input> {
 	constructor(public readonly evaluate: (input: Input) => Either<Error, Output>) {}

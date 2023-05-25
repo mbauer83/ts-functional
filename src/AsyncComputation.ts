@@ -1,10 +1,10 @@
 /* eslint-disable max-nested-callbacks */
-import {type AsyncIO} from './AsyncIO';
-import {type AsyncTask} from './AsyncTask';
-import {type AsyncContravariantFunctor} from './Contravariant';
-import {type Either, Left, Right} from './Either';
-import {type AsyncMonad} from './Monad';
-import {MonadicPromise} from './MonadicPromise';
+import {type AsyncIO} from './AsyncIO.js';
+import {type AsyncTask} from './AsyncTask.js';
+import {type AsyncContravariantFunctor} from './Contravariant.js';
+import {type Either, Left, Right} from './Either.js';
+import {type AsyncMonad} from './Monad.js';
+import {MonadicPromise} from './MonadicPromise.js';
 
 export class AsyncComputation<I, E, O> implements AsyncMonad<O>, AsyncContravariantFunctor<I> {
 	constructor(public readonly evaluate: (input: I) => Promise<Either<E, O>>) {}

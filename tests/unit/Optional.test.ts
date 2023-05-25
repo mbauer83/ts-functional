@@ -1,6 +1,6 @@
 import {describe, expect, test} from '@jest/globals';
-import { Left, Right } from '../../src/Either';
-import { None, optionalFromValue, Some } from '../../src/Optional';
+import { Left, Right } from '../../src/Either.js';
+import { None, optionalFromValue, Some } from '../../src/Optional.js';
 
 describe('test Optional monad', () => {
     const numberOptSome = new Some<number>(2);

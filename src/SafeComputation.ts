@@ -1,5 +1,5 @@
-import {type ContravariantFunctor} from './Contravariant';
-import {type Monad} from './Monad';
+import {type ContravariantFunctor} from './Contravariant.js';
+import {type Monad} from './Monad.js';
 
 export class SafeComputation<Input, Output> implements Monad<Output>, ContravariantFunctor<Input> {
 	constructor(public readonly evaluate: (input: Input) => Output) {}

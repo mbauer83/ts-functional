@@ -1,4 +1,4 @@
-import {type SpreadableElement} from './definitions';
+import {type SpreadableElement} from './definitions.js';
 
 type Curried<F extends ((..._: any) => any)> =
   F extends ((a: any) => any)

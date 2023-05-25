@@ -1,6 +1,6 @@
 /* eslint-disable */
 import {describe, expect, test} from '@jest/globals';
-import { State, state, stateFrom } from '../../src/State';
+import { State, state, stateFrom } from '../../src/State.js';
 
 describe('test State monad', () => {
     test('test functorial map', () => {

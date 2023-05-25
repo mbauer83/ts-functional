@@ -1,4 +1,4 @@
-import {type GenericFunction, type UnspecifiedFunction} from './definitions';
+import {type GenericFunction, type UnspecifiedFunction} from './definitions.js';
 
 export type CanBeComposed<F extends UnspecifiedFunction, G extends UnspecifiedFunction> = ReturnType<G> extends Parameters<F> ? true : false;
 export type CanBePreComposed<F extends (..._: any[]) => any, G extends (..._: any[]) => any> = ReturnType<F> extends Parameters<G> ? true : false;

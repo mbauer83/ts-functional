@@ -1,6 +1,6 @@
 /* eslint-disable */
 
-import { AdaptiveLens } from '../../src/AdaptiveLens';
+import { AdaptiveLens } from '../../src/AdaptiveLens.js';
 
 type NameExtended = { firstName: string, lastName: string };
 type StreetExtended = { name: string, no: string };

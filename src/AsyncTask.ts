@@ -1,7 +1,7 @@
-import {AsyncComputation} from './AsyncComputation';
-import {type AsyncIO} from './AsyncIO';
-import {type Either, Right, Left} from './Either';
-import {type AsyncMonad} from './Monad';
+import {AsyncComputation} from './AsyncComputation.js';
+import {type AsyncIO} from './AsyncIO.js';
+import {type Either, Right, Left} from './Either.js';
+import {type AsyncMonad} from './Monad.js';
 
 export class AsyncTask<E, O> implements AsyncMonad<O> {
 	constructor(public readonly evaluate: (..._: any[]) => Promise<Either<E, O>>) {}

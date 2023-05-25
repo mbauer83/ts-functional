@@ -1,7 +1,7 @@
 /* eslint-disable */
 import {describe, expect, test} from '@jest/globals';
-import {QueriedValueNotPresent} from '../../src/definitions';
-import {Left, Right, eitherFromFnOrError, eitherFromFnOrErrorFn} from '../../src/Either';
+import {QueriedValueNotPresent} from '../../src/definitions.js';
+import {Left, Right, eitherFromFnOrError, eitherFromFnOrErrorFn} from '../../src/Either.js';
 
 describe('Either monad', () => {
     // Test every method in Left

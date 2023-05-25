@@ -1,4 +1,4 @@
-import {Lens} from '../src/Lens';
+import {Lens} from '../src/Lens.js';
 
 class A {
 	constructor(

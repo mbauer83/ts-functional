@@ -1,7 +1,7 @@
-import {AsyncComputation} from './AsyncComputation';
-import {AsyncTask} from './AsyncTask';
-import {type Either} from './Either';
-import {type AsyncMonad} from './Monad';
+import {AsyncComputation} from './AsyncComputation.js';
+import {AsyncTask} from './AsyncTask.js';
+import {type Either} from './Either.js';
+import {type AsyncMonad} from './Monad.js';
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export class AsyncIO<T> implements AsyncMonad<T> {

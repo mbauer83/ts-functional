@@ -1,4 +1,4 @@
-import {type Applicative} from './Applicative';
+import {type Applicative} from './Applicative.js';
 
 export type UnspecifiedFunction = (..._: any[]) => any;
 

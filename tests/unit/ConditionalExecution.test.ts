@@ -1,7 +1,7 @@
 /* eslint-disable */
 import { describe, expect, test, jest } from '@jest/globals';
-import { Left, Right } from '../../src/Either';
-import { ConditionalExecution } from '../../src/ConditionalExecution';
+import { Left, Right } from '../../src/Either.js';
+import { ConditionalExecution } from '../../src/ConditionalExecution.js';
 
 describe('test ConditionalExecution', () => {
     const thenFn = jest.fn();

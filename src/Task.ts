@@ -1,7 +1,7 @@
 /* eslint-disable max-nested-callbacks */
-import {Computation} from './Computation';
-import {type Either, Right, Left} from './Either';
-import {type Monad} from './Monad';
+import {Computation} from './Computation.js';
+import {type Either, Right, Left} from './Either.js';
+import {type Monad} from './Monad.js';
 
 export class Task<Error, Output> implements Monad<Output> {
 	constructor(public readonly evaluate: (..._: any[]) => Either<Error, Output>) {}
