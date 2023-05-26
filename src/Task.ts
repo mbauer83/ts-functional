@@ -2,6 +2,7 @@
 import {Computation} from './Computation.js';
 import {type Either, Right, Left} from './Either.js';
 import {type Monad} from './Monad.js';
+import {type IO} from './IO.js';
 
 export class Task<E, O> implements Monad<O> {
 	constructor(public readonly evaluate: (..._: any[]) => Either<E, O>) {}
@@ -20,10 +21,14 @@ export class Task<E, O> implements Monad<O> {
 	}
 
 	// eslint-disable-next-line @typescript-eslint/naming-convention
-	thenDoIO<O2>(io: Task<E, O2>): Task<E, O2> {
+	thenDoIO<O2>(io: IO<O2>): Task<E, O2> {
 		const resolver = (..._: any[]) => {
-			this.evaluate();
-			return io.evaluate();
+			const thisValue = this.evaluate();
+			if (thisValue.isLeft()) {
+				return thisValue as any as Either<E, O2>;
+			}
+
+			return new Right<E, O2>(io.evaluate());
 		};
 
 		return new Task(resolver);
