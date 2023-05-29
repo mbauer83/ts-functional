@@ -2,5 +2,14 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:base"
-  ]
+  ],
+  "hostRules": [
+    {
+      "baseUrl": "https://npm.pkg.github.com",
+      "encrypted": {
+        "token": "wcFMA/xDdHCJBTolAQ//TaB27QBfvped7AmmfxpOus1xnD70Fb10Tv65lFgKQpQYWWu1PuLlLZ82ODZAYItG/UEtEFsnZ5m0XcwcDpi1CZcLMQpvouaxy+JR9o3wRayTOQsvFIWYXR1zKBxlX26RPTpu771NV5IhGhaK+v54Z+UTlHat+vF1R53AriMBIRYGBjWNP0tXrPw5EW2pg009CuZTIlr3z5NBILly/c1dXP6yrtDw5WlNjSWOmDHXNIIfRBritappVYJGWVoRitK/PN6mJx6Ecls40Q7w93ZUAOsnRQOu74cTg6Wsg/LmA69eQajl1Fl7D7fZC/sxID/9cVfPZneADgICYv9fAPgzJrEAFI4UMlk+Pz1Eac2El2FsO7/+ve+a8Q+zJZGYml+w+gvq8JecG7FhtAO446EA1MxZwndYOFdbxxbX5Olg/ftucOh3lmvTTmn/tneujNgLNwRKOYsIO3yqZHujUwj7wUcT/Y6iRi6kMNwg/NlNDI9ZFsZIOTCrGzSg7arEWiPyZV7TesY7wXIw7p2OP23kO4gFF73txRj+rcKG3oGlxs6IXOYmM2OvXmfOZsGywjNY6scC1/pvjGKdRGuRvIuZihVNxeled7TOjPEwtt9qovbf/DCPilaPMkYOaKTtoUVTxjruaql4Kfcv5hIj6mcpEEZAUgp6iTVQwDqlhTolYwnSdwFwmsx4d+bDB53CwQru+uzGX+voo8Tu7fbgyyKVFLXrk0atcRzSk/iwg64X4UxkyPzjOcgXGD2tf/NIBHdOboxAonp/Ze+7i6L3+kBO3PODm2njInml96xUz/19kE2qX/xeV1TrX4xEBLyBVTNd2Jp5mstZ/32U"
+      }
+    }
+  ],
+  "npmrc": "registry=https://npm.pkg.github.com/mbauer83\nalways-auth=true"
 }
