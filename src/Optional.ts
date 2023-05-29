@@ -48,6 +48,12 @@ export interface Optional<T> extends Monad<T>, EqualityComparable<Optional<T>> {
 }
 
 export class None<T> implements Optional<T> {
+	public static readonly noneInstance: None<unknown> = new None<unknown>();
+
+	static for<T>(): None<T> {
+		return None.noneInstance as None<T>;
+	}
+
 	equals(other: Optional<T>): boolean {
 		return other.isNone();
 	}
