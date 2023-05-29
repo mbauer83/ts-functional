@@ -24,8 +24,8 @@ export class Tree<T> implements Monad<T>, EqualityComparable<Tree<T>> {
 	visitPreorder(
 		f: (x: T, depth: number, parent: Optional<Tree<T>>, childIdx: Optional<number>) => void,
 		depth = 0,
-		parent: Optional<Tree<T>> = new None<Tree<T>>(),
-		childIdx: Optional<number> = new None<number>(),
+		parent: Optional<Tree<T>> = None.for<Tree<T>>(),
+		childIdx: Optional<number> = None.for<number>(),
 	): void {
 		f(this.value, depth, parent, childIdx);
 		const someThis = new Some<Tree<T>>(this) as Optional<Tree<T>>;
@@ -37,8 +37,8 @@ export class Tree<T> implements Monad<T>, EqualityComparable<Tree<T>> {
 	visitPostorder(
 		f: (x: T, depth: number, parent: Optional<Tree<T>>, chlidIdx: Optional<number>) => void,
 		depth = 0,
-		parent: Optional<Tree<T>> = new None<Tree<T>>(),
-		childIdx: Optional<number> = new None<number>(),
+		parent: Optional<Tree<T>> = None.for<Tree<T>>(),
+		childIdx: Optional<number> = None.for<number>(),
 	): void {
 		for (const [idx, child] of this.children.entries()) {
 			child.visitPostorder(f, depth + 1, new Some<Tree<T>>(this) as Optional<Tree<T>>, new Some<number>(idx) as Optional<number>);
@@ -50,8 +50,8 @@ export class Tree<T> implements Monad<T>, EqualityComparable<Tree<T>> {
 	visitLevelOrder(
 		f: (x: T, depth: number, parent: Optional<Tree<T>>, chlidIdx: Optional<number>) => void,
 		depth = 0,
-		parent: Optional<Tree<T>> = new None<Tree<T>>(),
-		childIdx: Optional<number> = new None<number>(),
+		parent: Optional<Tree<T>> = None.for<Tree<T>>(),
+		childIdx: Optional<number> = None.for<number>(),
 	): void {
 		const queue: Array<[Tree<T>, number, Optional<Tree<T>>, Optional<number>]> = [[this, depth, parent, childIdx]];
 		while (queue.length > 0) {
@@ -296,7 +296,7 @@ export class Tree<T> implements Monad<T>, EqualityComparable<Tree<T>> {
 		if (traversalOrder === 'pre') {
 			if (evaluatePredicate(predicate, this)) {
 				removed = true;
-				return new None<Tree<T>>();
+				return None.for<Tree<T>>();
 			}
 
 			const children
@@ -320,7 +320,7 @@ export class Tree<T> implements Monad<T>, EqualityComparable<Tree<T>> {
 		const newThis = new Tree<T>(this.value, children);
 		if (!removed && evaluatePredicate(predicate, newThis)) {
 			removed = true;
-			return new None<Tree<T>>();
+			return None.for<Tree<T>>();
 		}
 
 		return new Some<Tree<T>>(newThis);
@@ -329,7 +329,7 @@ export class Tree<T> implements Monad<T>, EqualityComparable<Tree<T>> {
 	protected removeNodesByPredicateInternal(predicate: PredicateOrFn<Tree<T>>, traversalOrder: 'pre' | 'post'): Optional<Tree<T>> {
 		if (traversalOrder === 'pre') {
 			if (evaluatePredicate(predicate, this)) {
-				return new None<Tree<T>>();
+				return None.for<Tree<T>>();
 			}
 
 			const originalChildrenCount = this.children.length;
@@ -353,7 +353,7 @@ export class Tree<T> implements Monad<T>, EqualityComparable<Tree<T>> {
             	.map(c => c.getOrThrow('No value present.'));
 		const newThis = originalChildrenCount > children.length ? new Tree<T>(this.value, children) : this;
 		if (evaluatePredicate(predicate, newThis)) {
-			return new None<Tree<T>>();
+			return None.for<Tree<T>>();
 		}
 
 		return new Some<Tree<T>>(newThis);
@@ -403,7 +403,7 @@ export class Tree<T> implements Monad<T>, EqualityComparable<Tree<T>> {
 			}
 		}
 
-		return new None<Tree<T>>();
+		return None.for<Tree<T>>();
 	}
 
 	protected findFirstMatchPostorder(p: PredicateOrFn<Tree<T>>): Optional<Tree<T>> {
@@ -427,14 +427,14 @@ export class Tree<T> implements Monad<T>, EqualityComparable<Tree<T>> {
 			return new Some<Tree<T>>(this);
 		}
 
-		return new None<Tree<T>>();
+		return None.for<Tree<T>>();
 	}
 
 	protected moveChildNode(
 		parentPredicate: PredicateOrFn<Tree<T>>,
 		currChildIdx: number,
 		newChildIdx: number,
-		newParentPredicate: Optional<PredicateOrFn<Tree<T>>> = new None<PredicateOrFn<Tree<T>>>(),
+		newParentPredicate: Optional<PredicateOrFn<Tree<T>>> = None.for<PredicateOrFn<Tree<T>>>(),
 	): Either<Error, Tree<T>> {
 		if (newParentPredicate === null || newChildIdx === currChildIdx) {
 			return new Right<Error, Tree<T>>(this);

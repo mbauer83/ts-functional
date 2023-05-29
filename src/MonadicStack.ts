@@ -65,7 +65,7 @@ export class MonadicStack<T> implements Monad<T>, EqualityComparable<MonadicStac
 			return new Some<T>(this.stack[0]);
 		}
 
-		return new None<T>();
+		return None.for<T>();
 	}
 
 	pop(): [Optional<T>, MonadicStack<T>] {
@@ -74,7 +74,7 @@ export class MonadicStack<T> implements Monad<T>, EqualityComparable<MonadicStac
 			return [new Some<T>(head), new MonadicStack<T>(...tail)];
 		}
 
-		return [new None<T>(), this];
+		return [None.for<T>(), this];
 	}
 
 	push(...ts: T[]): MonadicStack<T> {

@@ -188,7 +188,7 @@ class AdjacencyMatrixGraph<T> {
 			}
 		}
 
-		return new None<GraphNode<T>>();
+		return None.for<GraphNode<T>>();
 	}
 
 	depthFirstSearchAll(foundIndicator: (n: GraphNode<T>) => boolean): MonadicSet<GraphNode<T>> {
@@ -212,7 +212,7 @@ class AdjacencyMatrixGraph<T> {
 			}
 		}
 
-		return new None<GraphNode<T>>();
+		return None.for<GraphNode<T>>();
 	}
 
 	breadthFirstSearchAll(foundIndicator: (n: GraphNode<T>) => boolean): MonadicSet<GraphNode<T>> {
@@ -323,7 +323,7 @@ class AdjacencyMatrixGraph<T> {
 			}
 		}
 
-		return new None<GraphNode<T>>();
+		return None.for<GraphNode<T>>();
 	}
 
 	private dfsUtilAll(node: GraphNode<T>, visited: Set<GraphNode<T>>, foundIndicator: (n: GraphNode<T>) => boolean): MonadicSet<GraphNode<T>> {
@@ -364,7 +364,7 @@ class AdjacencyMatrixGraph<T> {
 			}
 		}
 
-		return new None<GraphNode<T>>();
+		return None.for<GraphNode<T>>();
 	}
 
 	private edgesArrayHasCycle(edges: Array<[GraphNode<T>, GraphNode<T>]>): boolean {
