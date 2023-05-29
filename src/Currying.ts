@@ -1,6 +1,6 @@
 import {type SpreadableElement} from './definitions.js';
 
-type Curried<F extends ((..._: any) => any)> =
+export type Curried<F extends ((..._: any) => any)> =
   F extends ((a: any) => any)
   	? F
   	: F extends ((a: infer A, ...b: infer B) => infer O)
