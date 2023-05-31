@@ -4,7 +4,7 @@ import {type Monad} from './Monad.js';
 import {Task} from './Task.js';
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
-export class IO<T> implements Monad<T> {
+export class IO<out T> implements Monad<T> {
 	constructor(public readonly evaluate: (..._: any[]) => T) {}
 
 	thenDo<U>(f: (..._: any[]) => U): IO<U> {

@@ -3,7 +3,7 @@ import {everyFilterable, type Filterable, noneFilterable, someFilterable} from '
 import {type Monad} from './Monad.js';
 import {evaluatePredicate, type PredicateOrFn} from './Predicate.js';
 
-export class MonadicSet<T> implements Monad<T>, EqualityComparable<MonadicSet<T>>, Filterable<T> {
+export class MonadicSet<out T> implements Monad<T>, EqualityComparable<MonadicSet<T>>, Filterable<T> {
 	protected readonly innerSet: Set<T>;
 	protected readonly size: number;
 

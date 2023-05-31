@@ -308,4 +308,112 @@ describe('test ConditionalExecution', () => {
         expect(otherwiseSymbolFn).toHaveBeenCalledTimes(1);
         expect(otherwiseStringFn).toHaveBeenCalledTimes(1);
     });
+
+    // Test zip2WithElse
+    test('test zip2WithElse', () => {
+            
+            const date = new Date();
+            const symbolOtherwise = Symbol('otherwise');
+            const thenDateFn = jest.fn();
+            thenDateFn.mockReturnValue(date);
+            const otherwiseSymbolFn= jest.fn();
+            otherwiseSymbolFn.mockReturnValue(symbolOtherwise);
+    
+            const condExec = new ConditionalExecution(thenDateFn, otherwiseSymbolFn);
+    
+            const thenNumberFn = jest.fn();
+            thenNumberFn.mockReturnValue(10);
+            const otherwiseStringFn = jest.fn();
+            otherwiseStringFn.mockReturnValue('otherwise');
+    
+            const thenMapFn = jest.fn();
+            thenMapFn.mockReturnValue(new Map());
+            const otherwiseSetFn = jest.fn();
+            otherwiseSetFn.mockReturnValue(new Set());
+
+            const otherConditionalExecution1 = new ConditionalExecution(thenNumberFn, otherwiseStringFn);
+            const otherConditionalExecution2 = new ConditionalExecution(thenMapFn, otherwiseSetFn);
+            const zippedConditionalExecution = condExec.zip2WithElse(otherConditionalExecution1, otherConditionalExecution2);
+
+            // Test case 1
+            const bool1 = true;
+            const result1 = zippedConditionalExecution.evaluate(bool1);
+            expect(result1).toEqual(new Right([date, 10, new Map()]));
+            expect(thenDateFn).toHaveBeenCalledTimes(1);
+            expect(thenNumberFn).toHaveBeenCalledTimes(1);
+            expect(thenMapFn).toHaveBeenCalledTimes(1);
+            expect(otherwiseSymbolFn).not.toHaveBeenCalled();
+            expect(otherwiseStringFn).not.toHaveBeenCalled();
+            expect(otherwiseSetFn).not.toHaveBeenCalled();
+
+            // Test case 2
+            const bool2 = false;
+            const result2 = zippedConditionalExecution.evaluate(bool2);
+            expect(result2).toEqual(new Left([symbolOtherwise, 'otherwise', new Set()]));
+            expect(thenDateFn).toHaveBeenCalledTimes(1);
+            expect(thenNumberFn).toHaveBeenCalledTimes(1);
+            expect(thenMapFn).toHaveBeenCalledTimes(1);
+            expect(otherwiseSymbolFn).toHaveBeenCalledTimes(1);
+            expect(otherwiseStringFn).toHaveBeenCalledTimes(1);
+            expect(otherwiseSetFn).toHaveBeenCalledTimes(1);
+        });
+
+        // Test zip3WithElse
+        test('test zip3WithElse', () => {
+                
+                const date = new Date();
+                const symbolOtherwise = Symbol('otherwise');
+                const thenDateFn = jest.fn();
+                thenDateFn.mockReturnValue(date);
+                const otherwiseSymbolFn= jest.fn();
+                otherwiseSymbolFn.mockReturnValue(symbolOtherwise);
+        
+                const condExec = new ConditionalExecution(thenDateFn, otherwiseSymbolFn);
+        
+                const thenNumberFn = jest.fn();
+                thenNumberFn.mockReturnValue(10);
+                const otherwiseStringFn = jest.fn();
+                otherwiseStringFn.mockReturnValue('otherwise');
+        
+                const thenMapFn = jest.fn();
+                thenMapFn.mockReturnValue(new Map());
+                const otherwiseSetFn = jest.fn();
+                otherwiseSetFn.mockReturnValue(new Set());
+    
+                const thenArrayFn = jest.fn();
+                thenArrayFn.mockReturnValue(new Array());
+                const otherwiseObjectFn = jest.fn();
+                otherwiseObjectFn.mockReturnValue(new Object());
+    
+                const otherConditionalExecution1 = new ConditionalExecution(thenNumberFn, otherwiseStringFn);
+                const otherConditionalExecution2 = new ConditionalExecution(thenMapFn, otherwiseSetFn);
+                const otherConditionalExecution3 = new ConditionalExecution(thenArrayFn, otherwiseObjectFn);
+                const zippedConditionalExecution = condExec.zip3WithElse(otherConditionalExecution1, otherConditionalExecution2, otherConditionalExecution3);
+    
+                // Test case 1
+                const bool1 = true;
+                const result1 = zippedConditionalExecution.evaluate(bool1);
+                expect(result1).toEqual(new Right([date, 10, new Map(), new Array()]));
+                expect(thenDateFn).toHaveBeenCalledTimes(1);
+                expect(thenNumberFn).toHaveBeenCalledTimes(1);
+                expect(thenMapFn).toHaveBeenCalledTimes(1);
+                expect(thenArrayFn).toHaveBeenCalledTimes(1);
+                expect(otherwiseSymbolFn).not.toHaveBeenCalled();
+                expect(otherwiseStringFn).not.toHaveBeenCalled();
+                expect(otherwiseSetFn).not.toHaveBeenCalled();
+                expect(otherwiseObjectFn).not.toHaveBeenCalled();
+    
+                // Test case 2
+                const bool2 = false;
+                const result2 = zippedConditionalExecution.evaluate(bool2);
+                expect(result2).toEqual(new Left([symbolOtherwise, 'otherwise', new Set(), new Object()]));
+                expect(thenDateFn).toHaveBeenCalledTimes(1);
+                expect(thenNumberFn).toHaveBeenCalledTimes(1);
+                expect(thenMapFn).toHaveBeenCalledTimes(1);
+                expect(thenArrayFn).toHaveBeenCalledTimes(1);
+                expect(otherwiseSymbolFn).toHaveBeenCalledTimes(1);
+                expect(otherwiseStringFn).toHaveBeenCalledTimes(1);
+                expect(otherwiseSetFn).toHaveBeenCalledTimes(1);
+                expect(otherwiseObjectFn).toHaveBeenCalledTimes(1);
+        });
 });

@@ -1,7 +1,7 @@
 import {MonadicSet} from './MonadicSet.js';
 import {type PredicateOrFn} from './Predicate.js';
 
-export class LazyMonadicSet<T> extends MonadicSet<T> {
+export class LazyMonadicSet<out T> extends MonadicSet<T> {
 	protected resolved: undefined | MonadicSet<T> = undefined;
 
 	constructor(protected readonly f: () => T[]) {

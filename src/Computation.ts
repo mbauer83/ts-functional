@@ -5,7 +5,7 @@ import {IO} from './IO.js';
 import {type Monad} from './Monad.js';
 import {type Task} from './Task.js';
 
-export class Computation<Input, Error, Output> implements Monad<Output>, ContravariantFunctor<Input> {
+export class Computation<in Input, out Error, out Output> implements Monad<Output>, ContravariantFunctor<Input> {
 	constructor(public readonly evaluate: (input: Input) => Either<Error, Output>) {}
 
 	thenDo<O2>(f: (x: Output) => O2): Computation<Input, Error, O2> {

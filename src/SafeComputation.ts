@@ -1,7 +1,7 @@
 import {type ContravariantFunctor} from './Contravariant.js';
 import {type Monad} from './Monad.js';
 
-export class SafeComputation<Input, Output> implements Monad<Output>, ContravariantFunctor<Input> {
+export class SafeComputation<in Input, out Output> implements Monad<Output>, ContravariantFunctor<Input> {
 	constructor(public readonly evaluate: (input: Input) => Output) {}
 
 	contramap<PreInput>(f: (input: PreInput) => Input): SafeComputation<PreInput, Output> {

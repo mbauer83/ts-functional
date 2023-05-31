@@ -1,9 +1,9 @@
-export interface Semigroup<T> {
+export interface Semigroup<out T> {
 	op: SemigroupOperation<T>;
 	concat(other: T): Semigroup<T>;
 }
-export type SemigroupOperation<T> = (a: T, b: T) => T;
-export class SemigroupElement<T> implements Semigroup<T> {
+export type SemigroupOperation<out T> = (a: T, b: T) => T;
+export class SemigroupElement<out T> implements Semigroup<T> {
 	constructor(protected readonly value: T, public readonly op: SemigroupOperation<T>) {}
 	concat(other: T): SemigroupElement<T> {
 		return new SemigroupElement(this.op(this.value, other), this.op);

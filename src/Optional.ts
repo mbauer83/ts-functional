@@ -3,7 +3,7 @@ import {QueriedValueNotPresent, type Throwable} from './definitions.js';
 import {type Either, Left, Right} from './Either.js';
 import {type Monad} from './Monad.js';
 
-export interface Optional<T> extends Monad<T>, EqualityComparable<Optional<T>> {
+export interface Optional<out T> extends Monad<T>, EqualityComparable<Optional<T>> {
 	map<U>(f: (x: T) => U): Optional<U>;
 	apply<U>(f: Optional<(x: T) => U>): Optional<U>;
 	pure<U>(x: U): Optional<U>;

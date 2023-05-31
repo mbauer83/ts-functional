@@ -4,7 +4,7 @@ import {type Either, Right, Left} from './Either.js';
 import {type Monad} from './Monad.js';
 import {type IO} from './IO.js';
 
-export class Task<E, O> implements Monad<O> {
+export class Task<out E, out O> implements Monad<O> {
 	constructor(public readonly evaluate: (..._: any[]) => Either<E, O>) {}
 
 	thenDo<O2>(f: (..._: any[]) => O2): Task<E, O2> {

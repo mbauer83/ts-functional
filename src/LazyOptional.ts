@@ -2,7 +2,7 @@ import {type QueriedValueNotPresent, type Throwable} from './definitions.js';
 import {type Either} from './Either.js';
 import {None, type Optional, Some} from './Optional.js';
 
-export class LazyOptional<T> implements Optional<T> {
+export class LazyOptional<out T> implements Optional<T> {
 	private resolved: Optional<T> | undefined = undefined;
 	private readonly argsProvider: () => any[];
 	constructor(private readonly fn: (args: any[]) => Optional<T>, argsProvider: () => any[] = () => []) {

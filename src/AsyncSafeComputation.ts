@@ -3,7 +3,7 @@ import {type AsyncContravariantFunctor} from './Contravariant.js';
 import {type AsyncMonad} from './Monad.js';
 import {MonadicPromise} from './MonadicPromise.js';
 
-export class AsyncSafeComputation<I, O> implements AsyncMonad<O>, AsyncContravariantFunctor<I> {
+export class AsyncSafeComputation<in I, out O> implements AsyncMonad<O>, AsyncContravariantFunctor<I> {
 	constructor(public readonly evaluate: (input: I) => Promise<O>) {}
 
 	contramap<U>(f: (x: U) => Promise<I>): AsyncSafeComputation<U, O> {

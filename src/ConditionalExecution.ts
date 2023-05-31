@@ -2,7 +2,7 @@
 import {type Either, Left, Right} from './Either.js';
 import {type Monad} from './Monad.js';
 
-export class ConditionalExecution<T, E> implements Monad<T> {
+export class ConditionalExecution<out T, out E> implements Monad<T> {
 	constructor(
 		protected readonly then: (...args: any[]) => T,
 		protected readonly otherwise: (...args: any[]) => E,

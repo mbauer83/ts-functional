@@ -5,7 +5,7 @@ import {type Monad} from './Monad.js';
 import {type PredicateOrFn, evaluatePredicate} from './Predicate.js';
 import {None, type Optional, Some} from './Optional.js';
 
-export class MonadicStack<T> implements Monad<T>, EqualityComparable<MonadicStack<T>>, Filterable<T>, HasCount {
+export class MonadicStack<out T> implements Monad<T>, EqualityComparable<MonadicStack<T>>, Filterable<T>, HasCount {
 	static empty<T>(): MonadicStack<T> {
 		return new MonadicStack();
 	}

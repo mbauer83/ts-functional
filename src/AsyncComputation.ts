@@ -6,7 +6,7 @@ import {type Either, Left, Right} from './Either.js';
 import {type AsyncMonad} from './Monad.js';
 import {MonadicPromise} from './MonadicPromise.js';
 
-export class AsyncComputation<I, E, O> implements AsyncMonad<O>, AsyncContravariantFunctor<I> {
+export class AsyncComputation<in I, out E, out O> implements AsyncMonad<O>, AsyncContravariantFunctor<I> {
 	constructor(public readonly evaluate: (input: I) => Promise<Either<E, O>>) {}
 
 	thenDo<O2>(f: (..._: any[]) => Promise<O2>): AsyncComputation<I, E, O2> {

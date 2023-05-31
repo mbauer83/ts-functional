@@ -1,7 +1,7 @@
 import {type EqualityComparable} from '@mbauer83/ts-utils/src/comparison/equality.js';
 import {type Monad} from './Monad.js';
 
-export class Reader<E, T> implements Monad<T>, EqualityComparable<Reader<E, T>> {
+export class Reader<in E, out T> implements Monad<T>, EqualityComparable<Reader<E, T>> {
 	constructor(public readonly f: (x: E) => T) {}
 
 	equals(other: Reader<E, T>): boolean {

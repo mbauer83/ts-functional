@@ -2,7 +2,7 @@ import {type EqualityComparable} from '@mbauer83/ts-utils/src/comparison/equalit
 import {QueriedValueNotPresent, type Throwable} from './definitions.js';
 import {type Monad} from './Monad.js';
 
-export interface Either<L, R> extends Monad<R>, EqualityComparable<Either<L, R>> {
+export interface Either<out L, out R> extends Monad<R>, EqualityComparable<Either<L, R>> {
 	map<U>(f: (x: R) => U): Either<L, U>;
 	mapWithNewLeft<U, L2>(f: (x: R) => U, g: (x: any) => L2): Either<L2, U>;
 	apply<U>(f: Either<L, (x: R) => U>): Either<L, U>;

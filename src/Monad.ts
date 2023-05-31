@@ -1,6 +1,6 @@
 import {type AsyncApplicative, type Applicative} from './Applicative.js';
 
-export interface Monad<T> extends Applicative<T> {
+export interface Monad<out T> extends Applicative<T> {
 	map<U>(f: (x: T) => U): Monad<U>;
 	apply<U>(f: Monad<(x: T) => U>): Monad<U>;
 	pure<U>(x: U): Monad<U>;
@@ -8,7 +8,7 @@ export interface Monad<T> extends Applicative<T> {
 	zip<U>(other: Monad<U>): Monad<[T, U]>;
 }
 
-export interface AsyncMonad<T> extends AsyncApplicative<T> {
+export interface AsyncMonad<out T> extends AsyncApplicative<T> {
 	map<U>(f: (x: T) => Promise<U>): AsyncMonad<U>;
 	apply<U>(f: AsyncMonad<(x: T) => Promise<U>>): AsyncMonad<U>;
 	pure<U>(x: Promise<U>): AsyncMonad<U>;

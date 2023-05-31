@@ -1,7 +1,7 @@
 import {type QueriedValueNotPresent, type Throwable} from './definitions.js';
 import {type Either, Right, Left} from './Either.js';
 
-export class LazyEither<L, R> implements Either<L, R> {
+export class LazyEither<out L, out R> implements Either<L, R> {
 	private resolved: undefined | Either<L, R> = undefined;
 	constructor(private readonly getter: (...args: any[]) => Either<L, R>, private readonly getterArgsProvider: () => any[]) {}
 

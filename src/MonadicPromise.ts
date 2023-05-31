@@ -1,6 +1,6 @@
 import {type Monad} from './Monad.js';
 
-export class MonadicPromise<T> implements Monad<T> {
+export class MonadicPromise<out T> implements Monad<T> {
 	constructor(public readonly promise: Promise<T>) {}
 
 	map<U>(f: (x: T) => U): MonadicPromise<U> {

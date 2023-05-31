@@ -4,7 +4,7 @@ import {type Either} from './Either.js';
 import {type AsyncMonad} from './Monad.js';
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
-export class AsyncIO<T> implements AsyncMonad<T> {
+export class AsyncIO<out T> implements AsyncMonad<T> {
 	constructor(public readonly evaluate: (..._: any[]) => Promise<T>) {}
 
 	thenDo<U>(f: (..._: any[]) => Promise<U>): AsyncIO<U> {

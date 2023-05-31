@@ -10,11 +10,11 @@ class GraphIsNotConnectedError extends Error {
 	}
 }
 
-class GraphNode<T> {
+class GraphNode<out T> {
 	constructor(public readonly name: string, public readonly payload: T) {}
 }
 
-type Graph<T> = {
+type Graph<out T> = {
 	addNode(node: GraphNode<T>): void;
 	removeNode(node: GraphNode<T>): void;
 	removeNode(nodeName: string): void;
