@@ -1,8 +1,73 @@
+import {AsyncSafeComputation} from './AsyncSafeComputation.js';
+import {Computation} from './Computation.js';
 import {type ContravariantFunctor} from './Contravariant.js';
+import {type Either} from './Either.js';
+import {type IO} from './IO.js';
 import {type Monad} from './Monad.js';
+import {type Task} from './Task.js';
 
-export class SafeComputation<in Input, out Output> implements Monad<Output>, ContravariantFunctor<Input> {
+export class SafeComputation<Input, out Output> implements Monad<Output>, ContravariantFunctor<Input> {
 	constructor(public readonly evaluate: (input: Input) => Output) {}
+
+	thenDo<Output2>(f: (..._: any[]) => Output2): SafeComputation<Input, Output2> {
+		return new SafeComputation<Input, Output2>(input => f(this.evaluate(input)));
+	}
+
+	// eslint-disable-next-line @typescript-eslint/naming-convention
+	thenDoIO<Output2>(io: IO<Output2>): SafeComputation<Input, Output2> {
+		return this.thenDo(() => io.evaluate());
+	}
+
+	thenDoWithError<Error, Output2>(f: (..._: any[]) => Either<Error, Output2>): Computation<Input, Error, Output2> {
+		return new Computation<Input, Error, Output2>(input => f(this.evaluate(input)));
+	}
+
+	thenDoTask<Error, Output2>(task: Task<Error, Output2>): Computation<Input, Error, Output2> {
+		return this.thenDoWithError(() => task.evaluate());
+	}
+
+	thenDoWithSameInput<Output2>(f: (input: Input) => Output2): SafeComputation<Input, Output2> {
+		return new SafeComputation<Input, Output2>((input: Input) => {
+			this.evaluate(input);
+			return f(input);
+		});
+	}
+
+	thenDoSafeComputation<Output2>(computation: SafeComputation<Input, Output2>): SafeComputation<Input, Output2> {
+		return this.thenDoWithSameInput((input: Input) => computation.evaluate(input));
+	}
+
+	thenDoWithSameInputAndError<Error, Output2>(
+		f: (input: Input) => Either<Error, Output2>,
+	): Computation<Input, Error, Output2> {
+		return new Computation<Input, Error, Output2>(input => {
+			this.evaluate(input);
+			return f(input);
+		});
+	}
+
+	thenDoComputationWithSameInput<Error, Output2>(
+		computation: Computation<Input, Error, Output2>,
+	): Computation<Input, Error, Output2> {
+		return this.thenDoWithSameInputAndError(input => computation.evaluate(input));
+	}
+
+	thenDoWithNewInputAndError<Input2, Error, Output2>(
+		f: (input: Input2) => Either<Error, Output2>,
+	): Computation<[Input, Input2], Error, Output2> {
+		const resolver = ([input, input2]: [Input, Input2]) => {
+			this.evaluate(input);
+			return f(input2);
+		};
+
+		return new Computation<[Input, Input2], Error, Output2>(resolver);
+	}
+
+	thenDoComputationWithNewInput<Input2, Error2, Output2>(
+		computation: Computation<Input2, Error2, Output2>,
+	): Computation<[Input, Input2], Error2, Output2> {
+		return this.thenDoWithNewInputAndError(input2 => computation.evaluate(input2));
+	}
 
 	contramap<PreInput>(f: (input: PreInput) => Input): SafeComputation<PreInput, Output> {
 		return new SafeComputation<PreInput, Output>(input => this.evaluate(f(input)));
@@ -122,5 +187,9 @@ export class SafeComputation<in Input, out Output> implements Monad<Output>, Con
 		];
 
 		return new SafeComputation<Input, [Output, ...Output2[]]>(evaluate);
+	}
+
+	toAsync(): AsyncSafeComputation<Input, Output> {
+		return new AsyncSafeComputation<Input, Output>(async input => this.evaluate(input));
 	}
 }

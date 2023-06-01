@@ -1,5 +1,6 @@
 import {AsyncComputation} from './AsyncComputation.js';
-import {type AsyncIO} from './AsyncIO.js';
+import {AsyncIO} from './AsyncIO.js';
+import {AsyncSafeComputation} from './AsyncSafeComputation.js';
 import {type Either, Right, Left} from './Either.js';
 import {type AsyncMonad} from './Monad.js';
 
@@ -31,6 +32,25 @@ export class AsyncTask<out E, out O> implements AsyncMonad<O> {
 		};
 
 		return new AsyncTask(evaluate);
+	}
+
+	thenDoWithInput<Input, Output2>(f: (input: Input) => Promise<Output2>): AsyncComputation<Input, E, Output2> {
+		const resolver = async (input: Input): Promise<Either<E, Output2>> => {
+			const output = await this.evaluate(input);
+			if (output.isLeft()) {
+				return new Left(output.get()) as Either<E, Output2>;
+			}
+
+			return new Right(await f(input));
+		};
+
+		return new AsyncComputation(resolver);
+	}
+
+	thenDoSafeComputation<Input, Output2>(
+		computation: AsyncSafeComputation<Input, Output2>,
+	): AsyncComputation<Input, E, Output2> {
+		return this.thenDoWithInput(async (input: Input) => computation.evaluate(input));
 	}
 
 	thenDoWithNewError<E2, O2>(f: (_: any) => Promise<Either<E2, O2>>): AsyncTask<E | E2, O2> {
@@ -100,6 +120,110 @@ export class AsyncTask<out E, out O> implements AsyncMonad<O> {
 		};
 
 		return new AsyncComputation<I, E | E2, U>(evaluate);
+	}
+
+	orElseDo<U>(f: (..._: any[]) => Promise<U>): AsyncIO<U> {
+		const evaluate = async (input: any): Promise<U> => {
+			const output = await this.evaluate(input);
+			if (output.isLeft()) {
+				return f(input);
+			}
+
+			return output.get() as U;
+		};
+
+		return new AsyncIO(evaluate);
+	}
+
+	// eslint-disable-next-line @typescript-eslint/naming-convention
+	orElseDoIO<U>(io: AsyncIO<U>): AsyncIO<U> {
+		const evaluate = async (input: any): Promise<U> => {
+			const output = await this.evaluate(input);
+			if (output.isLeft()) {
+				return io.evaluate();
+			}
+
+			return output.get() as U;
+		};
+
+		return new AsyncIO(evaluate);
+	}
+
+	orElseDoWithInput<Input, Output2>(
+		f: (input: Input) => Promise<Output2>,
+	): AsyncSafeComputation<Input, Either<O, Output2>> {
+		const resolver = async (input: Input): Promise<Either<O, Output2>> => {
+			const output = await this.evaluate(input);
+			if (output.isLeft()) {
+				return new Right(await f(input));
+			}
+
+			return new Right(output.get() as Output2);
+		};
+
+		return new AsyncSafeComputation(resolver);
+	}
+
+	orElseDoSafeComputation<Input, Output2>(
+		computation: AsyncSafeComputation<Input, Output2>,
+	): AsyncSafeComputation<Input, Either<O, Output2>> {
+		return this.orElseDoWithInput(async (input: Input) => computation.evaluate(input));
+	}
+
+	orElseDoWithNewError<E2, U>(f: (..._: any[]) => Promise<Either<E2, U>>): AsyncTask<E2, U> {
+		const evaluate = async (input: any): Promise<Either<E2, U>> => {
+			const output = await this.evaluate(input);
+			if (output.isLeft()) {
+				return f(input);
+			}
+
+			return new Right(output.get() as U) as Either<E2, U>;
+		};
+
+		return new AsyncTask(evaluate);
+	}
+
+	orElseDoTask<E2, U>(task: AsyncTask<E2, U>): AsyncTask<E2, U> {
+		const evaluate = async (input: any): Promise<Either<E2, U>> => {
+			const output = await this.evaluate(input);
+			if (output.isLeft()) {
+				return task.evaluate(input);
+			}
+
+			return new Right(output.get() as U) as Either<E2, U>;
+		};
+
+		return new AsyncTask(evaluate);
+	}
+
+	orElseDoWithInputAndNewError<I, E2, U>(
+		f: (input: I) => Promise<Either<E2, U>>,
+	): AsyncComputation<I, E2, U> {
+		const evaluate = async (input: I): Promise<Either<E2, U>> => {
+			const output = await this.evaluate(input);
+			if (output.isLeft()) {
+				return f(input);
+			}
+
+			return new Right(output.get() as U) as Either<E2, U>;
+		};
+
+		return new AsyncComputation(evaluate);
+	}
+
+	orElseDoComputation<I, E2, U>(
+		computation: AsyncComputation<I, E2, U>,
+	): AsyncComputation<I, E2, U> {
+		const evaluate = async (input: I): Promise<Either<E2, U>> => {
+			const output = await this.evaluate(input);
+			if (output.isLeft()) {
+				return computation.evaluate(input);
+			}
+
+			return new Right(output.get() as U) as Either<E2, U>;
+		};
+
+		return new AsyncComputation(evaluate);
 	}
 
 	map<O2>(f: (x: O) => Promise<O2>): AsyncTask<E, O2> {

@@ -1,112 +1,234 @@
 /* eslint-disable max-nested-callbacks */
+import {AsyncComputation} from './AsyncComputation.js';
 import {type ContravariantFunctor} from './Contravariant.js';
 import {type Either, Right, Left} from './Either.js';
-import {IO} from './IO.js';
+import {type IO} from './IO.js';
 import {type Monad} from './Monad.js';
+import {SafeComputation} from './SafeComputation.js';
 import {type Task} from './Task.js';
 
-export class Computation<in Input, out Error, out Output> implements Monad<Output>, ContravariantFunctor<Input> {
+export class Computation<Input, out Error, out Output> implements Monad<Output>, ContravariantFunctor<Input> {
 	constructor(public readonly evaluate: (input: Input) => Either<Error, Output>) {}
 
-	thenDo<O2>(f: (x: Output) => O2): Computation<Input, Error, O2> {
+	thenDo<Output2>(f: (x: Output) => Output2): Computation<Input, Error, Output2> {
 		const evaluate = (input: Input) => {
 			const either = this.evaluate(input);
 			if (either.isLeft()) {
-				return new Left<Error, O2>(either.get());
+				return new Left<Error, Output2>(either.get());
 			}
 
-			return new Right<Error, O2>(f(either.get() as Output));
+			return new Right<Error, Output2>(f(either.get() as Output));
 		};
 
-		return new Computation<Input, Error, O2>(evaluate);
+		return new Computation<Input, Error, Output2>(evaluate);
 	}
 
 	// eslint-disable-next-line @typescript-eslint/naming-convention
-	thenDoIO<O2>(io: IO<O2>): IO<O2> {
-		const resolver = (input: Input) => {
-			this.evaluate(input);
-			return io.evaluate();
-		};
-
-		return new IO(resolver);
+	thenDoIO<Output2>(io: IO<Output2>): Computation<Input, Error, Output2> {
+		return this.thenDo(() => io.evaluate());
 	}
 
-	thenDoWithNewError<E2, O2>(f: (x: Output) => Either<E2, O2>): Computation<Input, Error | E2, O2> {
+	thenDoWithNewError<Error2, Output2>(f: (x: Output) => Either<Error2, Output2>): Computation<Input, Error | Error2, Output2> {
 		const evaluate = (input: Input) => {
 			const either = this.evaluate(input);
 			if (either.isLeft()) {
-				return new Left<Error | E2, O2>(either.get());
+				return new Left<Error | Error2, Output2>(either.get());
 			}
 
 			return f(either.get() as Output);
 		};
 
-		return new Computation<Input, Error | E2, O2>(evaluate);
+		return new Computation<Input, Error | Error2, Output2>(evaluate);
 	}
 
-	thenDoTask<E2, O2>(task: Task<E2, O2>): Computation<Input, Error | E2, O2> {
-		const evaluate = (input: Input) => {
+	thenDoTask<Error2, Output2>(task: Task<Error2, Output2>): Computation<Input, Error | Error2, Output2> {
+		return this.thenDoWithNewError(() => task.evaluate());
+	}
+
+	thenDoWithSameInput<Output2>(f: (input: Input) => Output2): Computation<Input, Error, Output2> {
+		const resolver = (input: Input) => {
 			const either = this.evaluate(input);
 			if (either.isLeft()) {
-				return new Left<Error | E2, O2>(either.get());
+				return new Left<Error, Output2>(either.get());
 			}
 
-			return task.evaluate();
+			return new Right<Error, Output2>(f(input));
 		};
 
-		return new Computation<Input, Error | E2, O2>(evaluate);
+		return new Computation<Input, Error, Output2>(resolver);
 	}
 
-	thenDoWithSameInputAndNewError<E2, O2>(f: (input: Input) => Either<E2, O2>): Computation<Input, Error | E2, O2> {
+	thenDoSafeComputationWithSameInput<Output2>(computation: SafeComputation<Input, Output2>): Computation<Input, Error, Output2> {
+		return this.thenDoWithSameInput((input: Input) => computation.evaluate(input));
+	}
+
+	thenDoWithNewInput<Input2, Output2>(f: (input: Input2) => Output2): Computation<[Input, Input2], Error, Output2> {
+		const evaluate = ([input, input2]: [Input, Input2]) => {
+			const either = this.evaluate(input);
+			if (either.isLeft()) {
+				return new Left<Error, Output2>(either.get());
+			}
+
+			return new Right<Error, Output2>(f(input2));
+		};
+
+		return new Computation<[Input, Input2], Error, Output2>(evaluate);
+	}
+
+	thenDoSafeComputation<Input2, Output2>(computation: SafeComputation<Input2, Output2>): Computation<[Input, Input2], Error, Output2> {
+		return this.thenDoWithNewInput((input: Input2) => computation.evaluate(input));
+	}
+
+	thenDoWithSameInputAndNewError<Error2, Output2>(f: (input: Input) => Either<Error2, Output2>): Computation<Input, Error | Error2, Output2> {
 		const evaluate = (input: Input) => {
 			const either = this.evaluate(input);
 			if (either.isLeft()) {
-				return new Left<Error | E2, O2>(either.get());
+				return new Left<Error | Error2, Output2>(either.get());
 			}
 
 			return f(input);
 		};
 
-		return new Computation<Input, Error | E2, O2>(evaluate);
+		return new Computation<Input, Error | Error2, Output2>(evaluate);
 	}
 
-	thenDoComputationWithSameInput<E2, O2>(c: Computation<Input, E2, O2>): Computation<Input, Error | E2, O2> {
+	thenDoComputationWithSameInput<Error2, Output2>(c: Computation<Input, Error2, Output2>): Computation<Input, Error | Error2, Output2> {
+		return this.thenDoWithSameInputAndNewError((input: Input) => c.evaluate(input));
+	}
+
+	thenDoWithNewInputAndError<Input2, Error2, Output2>(f: (input: Input2) => Either<Error2, Output2>): Computation<[Input, Input2], Error | Error2, Output2> {
+		const evaluate = ([input, input2]: [Input, Input2]) => {
+			const either = this.evaluate(input);
+			if (either.isLeft()) {
+				return new Left<Error | Error2, Output2>(either.get());
+			}
+
+			return f(input2);
+		};
+
+		return new Computation<[Input, Input2], Error | Error2, Output2>(evaluate);
+	}
+
+	thenDoComputation<Input2, Error2, Output2>(c: Computation<Input2, Error2, Output2>): Computation<[Input, Input2], Error | Error2, Output2> {
+		return this.thenDoWithNewInputAndError((input: Input2) => c.evaluate(input));
+	}
+
+	orElseDo<Output2>(f: (..._: any[]) => Output2): SafeComputation<Input, Either<Output, Output2>> {
+		const resolver = (input: Input) => {
+			const either = this.evaluate(input);
+			if (either.isLeft()) {
+				return new Right<Output, Output2>(f());
+			}
+
+			return new Left<Output, Output2>(either.get() as Output);
+		};
+
+		return new SafeComputation<Input, Either<Output, Output2>>(resolver);
+	}
+
+	// eslint-disable-next-line @typescript-eslint/naming-convention
+	orElseDoIO<Output2>(io: IO<Output2>): SafeComputation<Input, Either<Output, Output2>> {
+		return this.orElseDo(() => io.evaluate());
+	}
+
+	orElseDoWithSameInput<Output2>(f: (input: Input) => Output2): Computation<Input, Error, Either<Output, Output2>> {
+		const resolver = (input: Input) => {
+			const either = this.evaluate(input);
+			if (either.isLeft()) {
+				return new Right<Error, Either<Output, Output2>>(new Right<Output, Output2>(f(input)));
+			}
+
+			return new Right<Error, Either<Output, Output2>>(new Left<Output, Output2>(either.get() as Output));
+		};
+
+		return new Computation<Input, Error, Either<Output, Output2>>(resolver);
+	}
+
+	orElseDoSafeComputationWithSameInput<Output2>(computation: SafeComputation<Input, Output2>): Computation<Input, Error, Either<Output, Output2>> {
+		return this.orElseDoWithSameInput((input: Input) => computation.evaluate(input));
+	}
+
+	orElseDoWithNewInput<Input2, Output2>(f: (input: Input2) => Output2): Computation<[Input, Input2], Error, Either<Output, Output2>> {
+		const evaluate = ([input, input2]: [Input, Input2]) => {
+			const either = this.evaluate(input);
+			if (either.isLeft()) {
+				return new Right<Error, Either<Output, Output2>>(new Right<Output, Output2>(f(input2)));
+			}
+
+			return new Right<Error, Either<Output, Output2>>(new Left<Output, Output2>(either.get() as Output));
+		};
+
+		return new Computation<[Input, Input2], Error, Either<Output, Output2>>(evaluate);
+	}
+
+	orElseDoSafeComputationWithNewInput<Input2, Output2>(computation: SafeComputation<Input2, Output2>): Computation<[Input, Input2], Error, Either<Output, Output2>> {
+		return this.orElseDoWithNewInput((input: Input2) => computation.evaluate(input));
+	}
+
+	orElseDoWithNewError<Error2, Output2>(f: (..._: any[]) => Either<Error2, Output2>): Computation<Input, Error | Error2, Either<Output, Output2>> {
 		const evaluate = (input: Input) => {
 			const either = this.evaluate(input);
 			if (either.isLeft()) {
-				return new Left<Error | E2, O2>(either.get());
+				const otherEvaluated = f();
+				if (otherEvaluated.isLeft()) {
+					return otherEvaluated as Left<Error | Error2, Either<Output, Output2>>;
+				}
+
+				return new Right<Error | Error2, Either<Output, Output2>>(new Right<Output, Output2>(otherEvaluated.get() as Output2));
 			}
 
-			return c.evaluate(input);
+			return new Right<Error | Error2, Either<Output, Output2>>(new Left<Output, Output2>(either.get() as Output));
 		};
 
-		return new Computation<Input, Error | E2, O2>(evaluate);
+		return new Computation<Input, Error | Error2, Either<Output, Output2>>(evaluate);
 	}
 
-	thenDoWithNewInputAndError<I2, E2, O2>(f: (input: I2) => Either<E2, O2>): Computation<{i1: Input; i2: I2}, Error | E2, O2> {
-		const evaluate = ({i1, i2}: {i1: Input; i2: I2}) => {
-			const either = this.evaluate(i1);
-			if (either.isLeft()) {
-				return new Left<Error | E2, O2>(either.get());
-			}
-
-			return f(i2);
-		};
-
-		return new Computation<{i1: Input; i2: I2}, Error | E2, O2>(evaluate);
+	orElseDoTask<Error2, Output2>(task: Task<Error2, Output2>): Computation<Input, Error | Error2, Either<Output, Output2>> {
+		return this.orElseDoWithNewError(() => task.evaluate());
 	}
 
-	thenDoComputation<I2, E2, O2>(c: Computation<I2, E2, O2>): Computation<{i1: Input; i2: I2}, Error | E2, O2> {
-		const evaluate = ({i1, i2}: {i1: Input; i2: I2}) => {
-			const either = this.evaluate(i1);
+	orElseDoWithSameInputAndNewError<Error2, Output2>(f: (input: Input) => Either<Error2, Output2>): Computation<Input, Error | Error2, Either<Output, Output2>> {
+		const evaluate = (input: Input) => {
+			const either = this.evaluate(input);
 			if (either.isLeft()) {
-				return new Left<Error | E2, O2>(either.get());
+				const otherEvaluated = f(input);
+				if (otherEvaluated.isLeft()) {
+					return otherEvaluated as Left<Error | Error2, Either<Output, Output2>>;
+				}
+
+				return new Right<Error | Error2, Either<Output, Output2>>(new Right<Output, Output2>(otherEvaluated.get() as Output2));
 			}
 
-			return c.evaluate(i2);
+			return new Right<Error | Error2, Either<Output, Output2>>(new Left<Output, Output2>(either.get() as Output));
 		};
 
-		return new Computation<{i1: Input; i2: I2}, Error | E2, O2>(evaluate);
+		return new Computation<Input, Error | Error2, Either<Output, Output2>>(evaluate);
+	}
+
+	orElseDoComputationWithSameInput<Error2, Output2>(c: Computation<Input, Error2, Output2>): Computation<Input, Error | Error2, Either<Output, Output2>> {
+		return this.orElseDoWithSameInputAndNewError((input: Input) => c.evaluate(input));
+	}
+
+	orElseDoWithNewInputAndError<Input2, Error2, Output2>(f: (input: Input2) => Either<Error2, Output2>): Computation<[Input, Input2], Error | Error2, Either<Output, Output2>> {
+		const evaluate = ([input1, input2]: [Input, Input2]) => {
+			const either = this.evaluate(input1);
+			if (either.isLeft()) {
+				const otherEvaluated = f(input2);
+				if (otherEvaluated.isLeft()) {
+					return otherEvaluated as Left<Error | Error2, Either<Output, Output2>>;
+				}
+
+				return new Right<Error | Error2, Either<Output, Output2>>(new Right<Output, Output2>(otherEvaluated.get() as Output2));
+			}
+
+			return new Right<Error | Error2, Either<Output, Output2>>(new Left<Output, Output2>(either.get() as Output));
+		};
+
+		return new Computation<[Input, Input2], Error | Error2, Either<Output, Output2>>(evaluate);
+	}
+
+	orElseDoComputation<Input2, Error2, Output2>(c: Computation<Input2, Error2, Output2>): Computation<[Input, Input2], Error | Error2, Either<Output, Output2>> {
+		return this.orElseDoWithNewInputAndError((input: Input2) => c.evaluate(input));
 	}
 
 	map<Output2>(f: (x: Output) => Output2): Computation<Input, Error, Output2> {
@@ -509,5 +631,9 @@ export class Computation<in Input, out Error, out Output> implements Monad<Outpu
 		};
 
 		return new Computation<Input, Error | Error2, [Output, ...Output2[]]>(evaluate);
+	}
+
+	toAsync(): AsyncComputation<Input, Error, Output> {
+		return new AsyncComputation(async (input: Input) => this.evaluate(input));
 	}
 }

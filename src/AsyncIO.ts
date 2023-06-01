@@ -1,4 +1,5 @@
 import {AsyncComputation} from './AsyncComputation.js';
+import {AsyncSafeComputation} from './AsyncSafeComputation.js';
 import {AsyncTask} from './AsyncTask.js';
 import {type Either} from './Either.js';
 import {type AsyncMonad} from './Monad.js';
@@ -18,12 +19,22 @@ export class AsyncIO<out T> implements AsyncMonad<T> {
 
 	// eslint-disable-next-line @typescript-eslint/naming-convention
 	thenDoIO<U>(io: AsyncIO<U>): AsyncIO<U> {
-		const resolver = async (..._: any[]) => {
+		return this.thenDo(async () => io.evaluate());
+	}
+
+	thenDoWithInput<Input, Output2>(f: (input: Input) => Promise<Output2>): AsyncSafeComputation<Input, Output2> {
+		const resolver = async (input: Input) => {
 			await this.evaluate();
-			return io.evaluate();
+			return f(input);
 		};
 
-		return new AsyncIO(resolver);
+		return new AsyncSafeComputation(resolver);
+	}
+
+	thenDoSafeComputation<Input, Output2>(
+		computation: AsyncSafeComputation<Input, Output2>,
+	): AsyncSafeComputation<Input, Output2> {
+		return this.thenDoWithInput(async (input: Input) => computation.evaluate(input));
 	}
 
 	thenDoWithError<E, U>(f: (..._: any[]) => Promise<Either<E, U>>): AsyncTask<E, U> {
@@ -36,15 +47,10 @@ export class AsyncIO<out T> implements AsyncMonad<T> {
 	}
 
 	thenDoTask<E2, O2>(task: AsyncTask<E2, O2>): AsyncTask<E2, O2> {
-		const resolver = async (..._: any[]) => {
-			await this.evaluate();
-			return task.evaluate();
-		};
-
-		return new AsyncTask(resolver);
+		return this.thenDoWithError(async () => task.evaluate());
 	}
 
-	thenDoWithNewInputAndError<I, E2, O2>(
+	thenDoWithInputAndError<I, E2, O2>(
 		f: (input: I) => Promise<Either<E2, O2>>,
 	): AsyncComputation<I, E2, O2> {
 		const resolver = async (input: I) => {
@@ -58,12 +64,7 @@ export class AsyncIO<out T> implements AsyncMonad<T> {
 	thenDoComputation<I, E2, O2>(
 		computation: AsyncComputation<I, E2, O2>,
 	): AsyncComputation<I, E2, O2> {
-		const resolver = async (input: I) => {
-			await this.evaluate();
-			return computation.evaluate(input);
-		};
-
-		return new AsyncComputation(resolver);
+		return this.thenDoWithInputAndError(async (input: I) => computation.evaluate(input));
 	}
 
 	mapToTask<E, U>(f: (x: T) => Promise<Either<E, U>>): AsyncTask<E, U> {

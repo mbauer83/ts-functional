@@ -6,7 +6,7 @@ export type Acquisition<Input, Error, Resource> = (i: Input) => Resource | SafeC
 export type Release<Resource> = ((resource: Resource) => any) | SafeComputation<Resource, any>;
 export type ManagedResourceUsage<Resource, Output> = (resource: Resource) => Output | SafeComputation<Resource, Output> | Computation<Resource, any, Output>;
 
-class ManagedResource<in Input, out Error, Resource> {
+class ManagedResource<Input, out Error, Resource> {
 	private readonly acquire: Computation<Input, Error, Resource>;
 	private readonly release: SafeComputation<Resource, any>;
 

@@ -1,6 +1,8 @@
+import {AsyncIO} from './AsyncIO.js';
 import {Computation} from './Computation.js';
 import {type Either} from './Either.js';
 import {type Monad} from './Monad.js';
+import {SafeComputation} from './SafeComputation.js';
 import {Task} from './Task.js';
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -18,12 +20,22 @@ export class IO<out T> implements Monad<T> {
 
 	// eslint-disable-next-line @typescript-eslint/naming-convention
 	thenDoIO<U>(io: IO<U>): IO<U> {
-		const resolver = (..._: any[]) => {
+		return this.thenDo(() => io.evaluate());
+	}
+
+	thenDoWithInput<Input, Output2>(f: (input: Input) => Output2): SafeComputation<Input, Output2> {
+		const resolver = (input: Input) => {
 			this.evaluate();
-			return io.evaluate();
+			return f(input);
 		};
 
-		return new IO(resolver);
+		return new SafeComputation(resolver);
+	}
+
+	thenDoSafeComputation<Input, Output2>(
+		computation: SafeComputation<Input, Output2>,
+	): SafeComputation<Input, Output2> {
+		return this.thenDoWithInput((input: Input) => computation.evaluate(input));
 	}
 
 	thenDoWithError<E, U>(f: (..._: any[]) => Either<E, U>): Task<E, U> {
@@ -36,12 +48,7 @@ export class IO<out T> implements Monad<T> {
 	}
 
 	thenDoTask<E2, O2>(task: Task<E2, O2>): Task<E2, O2> {
-		const resolver = (..._: any[]) => {
-			this.evaluate();
-			return task.evaluate();
-		};
-
-		return new Task(resolver);
+		return this.thenDoWithError(() => task.evaluate());
 	}
 
 	thenDoWithInputAndNewError<I, E2, O2>(
@@ -58,12 +65,7 @@ export class IO<out T> implements Monad<T> {
 	thenDoComputation<I, E2, O2>(
 		computation: Computation<I, E2, O2>,
 	): Computation<I, E2, O2> {
-		const resolver = (input: I) => {
-			this.evaluate();
-			return computation.evaluate(input);
-		};
-
-		return new Computation(resolver);
+		return this.thenDoWithInputAndNewError((input: I) => computation.evaluate(input));
 	}
 
 	mapToTask<E, U>(f: (x: T) => Either<E, U>): Task<E, U> {
@@ -160,5 +162,9 @@ export class IO<out T> implements Monad<T> {
 		const evaluate: () => [T, ...U[]]
             = () => [this.evaluate(), ...us.map(u => u.evaluate())];
 		return new IO(evaluate);
+	}
+
+	toAsync(): AsyncIO<T> {
+		return new AsyncIO(async () => this.evaluate());
 	}
 }
