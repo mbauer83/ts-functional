@@ -8,7 +8,7 @@ export type Acquisition<InputT, ErrorT, ResourceT> = (i: InputT) => ResourceT | 
 export type Release<Resource> = ((resource: Resource) => any) | SafeComputation<Resource, any>;
 export type ManagedResourceUsage<Resource, Output> = (resource: Resource) => Output | SafeComputation<Resource, Output> | Computation<Resource, any, Output>;
 
-class ManagedResource<InputT, out ErrorT, ResourceT> {
+export class ManagedResource<InputT, out ErrorT, ResourceT> {
 	private readonly acquire: Computation<InputT, ErrorT, ResourceT>;
 	private readonly release: SafeComputation<ResourceT, any>;
 
@@ -70,7 +70,7 @@ export type AsyncAcquisition<InputT, ErrorT, ResourceT> = ((i: InputT) => Promis
 export type AsyncRelease<ResourceT> = ((resource: ResourceT) => Promise<any>) | AsyncSafeComputation<ResourceT, any>;
 export type AsyncManagedResourceUsage<ResourceT, OutputT> = (resource: ResourceT) => Promise<OutputT> | AsyncSafeComputation<ResourceT, OutputT> | AsyncComputation<ResourceT, any, OutputT>;
 
-class AsyncManagedResource<InputT, out ErrorT, ResourceT> {
+export class AsyncManagedResource<InputT, out ErrorT, ResourceT> {
 	private readonly acquire: AsyncComputation<InputT, ErrorT, ResourceT>;
 	private readonly release: AsyncSafeComputation<ResourceT, any>;
 
