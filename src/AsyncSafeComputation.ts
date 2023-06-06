@@ -1,46 +1,78 @@
 
 import {AsyncComputation} from './AsyncComputation.js';
-import {type AsyncIO} from './AsyncIO.js';
+import {AsyncIO} from './AsyncIO.js';
 import {type AsyncTask} from './AsyncTask.js';
 import {type AsyncContravariantFunctor} from './Contravariant.js';
-import {type Either} from './Either.js';
+import {Right, type Either} from './Either.js';
 import {type AsyncMonad} from './Monad.js';
+import {type AsyncEffect, type AsyncBindEffectType, type BindEffectType, asyncBindEffectToIO} from './definitions.js';
 
-export class AsyncSafeComputation<Input, out Output> implements AsyncMonad<Output>, AsyncContravariantFunctor<Input> {
-	constructor(public readonly evaluate: (input: Input) => Promise<Output>) {}
+export class AsyncSafeComputation<in InputT, out OutputT> implements AsyncEffect<InputT, never, OutputT>, AsyncContravariantFunctor<InputT> {
+	static of<OutputT>(x: OutputT): AsyncSafeComputation<any, OutputT> {
+		return new AsyncSafeComputation<any, OutputT>(async () => x);
+	}
 
-	thenDo<Output2>(f: (..._: any[]) => Promise<Output2>): AsyncSafeComputation<Input, Output2> {
-		return new AsyncSafeComputation<Input, Output2>(async input => f(await this.evaluate(input)));
+	static do(): AsyncSafeComputation<any, Record<any, any>> {
+		return AsyncSafeComputation.of({});
+	}
+
+	constructor(public readonly evaluate: (input: InputT) => Promise<OutputT>) {}
+
+	bindKey<KeyT extends string | number | symbol, Output2T>(key: KeyT, f: (input: OutputT) => BindEffectType<Output2T> | AsyncBindEffectType<Output2T>): AsyncSafeComputation<InputT, OutputT & Record<KeyT, Output2T>> {
+		const resolver = async (input: InputT) => {
+			const output = await this.evaluate(input);
+			const asyncEffect = f(output).toAsync();
+			const asyncSafeComputationEffect = asyncBindEffectToIO<Output2T, typeof asyncEffect>(asyncEffect).toSafeComputation();
+			const output2 = await asyncSafeComputationEffect.evaluate(input);
+			return Object.assign({}, output, {[key]: output2} as Record<KeyT, Output2T>);
+		};
+
+		return new AsyncSafeComputation<InputT, OutputT & Record<KeyT, Output2T>>(resolver);
+	}
+
+	tap<EffectT extends BindEffectType<any> | AsyncBindEffectType<any>>(f: (input: OutputT) => EffectT): this {
+		const resolver = async (input: InputT) => {
+			const output = await this.evaluate(input);
+			const effect = f(output);
+			await effect.evaluate(input);
+			return output;
+		};
+
+		return new AsyncSafeComputation<InputT, OutputT>(resolver) as this;
+	}
+
+	thenDo<Output2T>(f: (..._: any[]) => Promise<Output2T>): AsyncSafeComputation<InputT, Output2T> {
+		return new AsyncSafeComputation<InputT, Output2T>(async input => f(await this.evaluate(input)));
 	}
 
 	// eslint-disable-next-line @typescript-eslint/naming-convention
-	thenDoIO<Output2>(io: AsyncIO<Output2>): AsyncSafeComputation<Input, Output2> {
+	thenDoIO<Output2T>(io: AsyncIO<Output2T>): AsyncSafeComputation<InputT, Output2T> {
 		return this.thenDo(async () => io.evaluate());
 	}
 
-	thenDoWithError<Error, Output2>(f: (..._: any[]) => Promise<Either<Error, Output2>>): AsyncComputation<Input, Error, Output2> {
-		return new AsyncComputation<Input, Error, Output2>(async input => f(await this.evaluate(input)));
+	thenDoWithError<ErrorT, Output2T>(f: (..._: any[]) => Promise<Either<ErrorT, Output2T>>): AsyncComputation<InputT, ErrorT, Output2T> {
+		return new AsyncComputation<InputT, ErrorT, Output2T>(async input => f(await this.evaluate(input)));
 	}
 
-	thenDoTask<Error, Output2>(task: AsyncTask<Error, Output2>): AsyncComputation<Input, Error, Output2> {
+	thenDoTask<ErrorT, Output2T>(task: AsyncTask<ErrorT, Output2T>): AsyncComputation<InputT, ErrorT, Output2T> {
 		return this.thenDoWithError(async () => task.evaluate());
 	}
 
-	thenDoWithSameInput<Output2>(f: (input: Input) => Promise<Output2>): AsyncSafeComputation<Input, Output2> {
-		return new AsyncSafeComputation<Input, Output2>(async (input: Input) => {
+	thenDoWithSameInput<Input2T extends InputT, Output2T>(f: (input: Input2T) => Promise<Output2T>): AsyncSafeComputation<Input2T, Output2T> {
+		return new AsyncSafeComputation<Input2T, Output2T>(async (input: Input2T) => {
 			await this.evaluate(input);
 			return f(input);
 		});
 	}
 
-	thenDoSafeComputationWithSameInput<Output2>(
-		computation: AsyncSafeComputation<Input, Output2>,
-	): AsyncSafeComputation<Input, Output2> {
-		return this.thenDoWithSameInput(async (input: Input) => computation.evaluate(input));
+	thenDoSafeComputationWithSameInput<Input2T extends InputT, Output2T>(
+		computation: AsyncSafeComputation<Input2T, Output2T>,
+	): AsyncSafeComputation<Input2T, Output2T> {
+		return this.thenDoWithSameInput(async (input: Input2T) => computation.evaluate(input));
 	}
 
-	thenDoWithNewInput<Input2, Output2>(f: (input: Input2) => Promise<Output2>): AsyncSafeComputation<[Input, Input2], Output2> {
-		return new AsyncSafeComputation<[Input, Input2], Output2>(async ([input, input2]: [Input, Input2]) => {
+	thenDoWithNewInput<Input2T, Output2T>(f: (input: Input2T) => Promise<Output2T>): AsyncSafeComputation<[InputT, Input2T], Output2T> {
+		return new AsyncSafeComputation<[InputT, Input2T], Output2T>(async ([input, input2]: [InputT, Input2T]) => {
 			await this.evaluate(input);
 			return f(input2);
 		});
@@ -48,42 +80,42 @@ export class AsyncSafeComputation<Input, out Output> implements AsyncMonad<Outpu
 
 	thenDoSafeComputation<Input2, Output2>(
 		computation: AsyncSafeComputation<Input2, Output2>,
-	): AsyncSafeComputation<[Input, Input2], Output2> {
+	): AsyncSafeComputation<[InputT, Input2], Output2> {
 		return this.thenDoWithNewInput(async (input: Input2) => computation.evaluate(input));
 	}
 
-	thenDoWithSameInputAndError<Error, Output2>(
-		f: (input: Input) => Promise<Either<Error, Output2>>,
-	): AsyncComputation<Input, Error, Output2> {
-		return new AsyncComputation<Input, Error, Output2>(async (input: Input) => {
+	thenDoWithSameInputAndError<Input2T extends InputT, ErrorT, Output2T>(
+		f: (input: Input2T) => Promise<Either<ErrorT, Output2T>>,
+	): AsyncComputation<Input2T, ErrorT, Output2T> {
+		return new AsyncComputation<Input2T, ErrorT, Output2T>(async (input: Input2T) => {
 			await this.evaluate(input);
 			return f(input);
 		});
 	}
 
-	thenDoComputationWithSameInput<Error, Output2>(
-		computation: AsyncComputation<Input, Error, Output2>,
-	): AsyncComputation<Input, Error, Output2> {
-		return this.thenDoWithError(async (input: Input) => computation.evaluate(input));
+	thenDoComputationWithSameInput<Input2T extends InputT, ErrorT, Output2T>(
+		computation: AsyncComputation<Input2T, ErrorT, Output2T>,
+	): AsyncComputation<Input2T, ErrorT, Output2T> {
+		return this.thenDoWithSameInputAndError(async (input: Input2T) => computation.evaluate(input));
 	}
 
-	thenDoWithNewInputAndError<Input2, Error, Output2>(
-		f: (input: Input2) => Promise<Either<Error, Output2>>,
-	): AsyncComputation<[Input, Input2], Error, Output2> {
-		return new AsyncComputation<[Input, Input2], Error, Output2>(async ([input, input2]: [Input, Input2]) => {
+	thenDoWithNewInputAndError<Input2T, ErrorT, Output2T>(
+		f: (input: Input2T) => Promise<Either<ErrorT, Output2T>>,
+	): AsyncComputation<[InputT, Input2T], ErrorT, Output2T> {
+		return new AsyncComputation<[InputT, Input2T], ErrorT, Output2T>(async ([input, input2]: [InputT, Input2T]) => {
 			await this.evaluate(input);
 			return f(input2);
 		});
 	}
 
-	thenDoComputation<Input2, Error, Output2>(
-		computation: AsyncComputation<Input2, Error, Output2>,
-	): AsyncComputation<[Input, Input2], Error, Output2> {
-		return this.thenDoWithNewInputAndError(async (input: Input2) => computation.evaluate(input));
+	thenDoComputation<Input2T, ErrorT, Output2T>(
+		computation: AsyncComputation<Input2T, ErrorT, Output2T>,
+	): AsyncComputation<[InputT, Input2T], ErrorT, Output2T> {
+		return this.thenDoWithNewInputAndError(async (input: Input2T) => computation.evaluate(input));
 	}
 
-	contramap<U>(f: (x: U) => Promise<Input>): AsyncSafeComputation<U, Output> {
-		const evaluate = async (input: U): Promise<Output> => {
+	contramap<Input2T>(f: (x: Input2T) => Promise<InputT>): AsyncSafeComputation<Input2T, OutputT> {
+		const evaluate = async (input: Input2T): Promise<OutputT> => {
 			const output = await f(input);
 			return this.evaluate(output);
 		};
@@ -91,8 +123,8 @@ export class AsyncSafeComputation<Input, out Output> implements AsyncMonad<Outpu
 		return new AsyncSafeComputation(evaluate);
 	}
 
-	map<O2>(f: (output: Output) => Promise<O2>): AsyncSafeComputation<Input, O2> {
-		const evaluate = async (input: Input): Promise<O2> => {
+	map<Output2T>(f: (output: OutputT) => Promise<Output2T>): AsyncSafeComputation<InputT, Output2T> {
+		const evaluate = async (input: InputT): Promise<Output2T> => {
 			const output = await this.evaluate(input);
 
 			return f(output);
@@ -101,16 +133,16 @@ export class AsyncSafeComputation<Input, out Output> implements AsyncMonad<Outpu
 		return new AsyncSafeComputation(evaluate);
 	}
 
-	apply<O2>(f: AsyncSafeComputation<Input, (x: Output) => Promise<O2>>): AsyncSafeComputation<Input, O2> {
+	apply<Output2T>(f: AsyncSafeComputation<InputT, (x: OutputT) => Promise<Output2T>>): AsyncSafeComputation<InputT, Output2T> {
 		return f.flatMap(g => this.map(g));
 	}
 
-	pure<U>(x: Promise<U>): AsyncSafeComputation<any, U> {
-		return new AsyncSafeComputation<any, U>(async () => x);
+	pure<Output2T>(x: Promise<Output2T>): AsyncSafeComputation<any, Output2T> {
+		return new AsyncSafeComputation<any, Output2T>(async () => x);
 	}
 
-	flatMap<O2>(f: (x: Output) => AsyncSafeComputation<Input, O2>): AsyncSafeComputation<Input, O2> {
-		const evaluate = async (input: Input): Promise<O2> => {
+	flatMap<Output2T>(f: (x: OutputT) => AsyncSafeComputation<InputT, Output2T>): AsyncSafeComputation<InputT, Output2T> {
+		const evaluate = async (input: InputT): Promise<Output2T> => {
 			const output = await this.evaluate(input);
 
 			return f(output).evaluate(input);
@@ -119,8 +151,44 @@ export class AsyncSafeComputation<Input, out Output> implements AsyncMonad<Outpu
 		return new AsyncSafeComputation(evaluate);
 	}
 
-	zip<U>(other: AsyncSafeComputation<Input, U>): AsyncSafeComputation<Input, [Output, U]> {
-		const evaluate = async (input: Input): Promise<[Output, U]> => {
+	flatMapWithNewInput<Input2T, Output2T>(
+		f: (x: OutputT) => AsyncSafeComputation<Input2T, Output2T>,
+	): AsyncSafeComputation<[InputT, Input2T], Output2T> {
+		const evaluate = async ([input, input2]: [InputT, Input2T]): Promise<Output2T> => {
+			const output = await this.evaluate(input);
+
+			return f(output).evaluate(input2);
+		};
+
+		return new AsyncSafeComputation(evaluate);
+	}
+
+	flatMapWithError<ErrorT, Output2T>(
+		f: (x: OutputT) => AsyncTask<ErrorT, Output2T>,
+	): AsyncComputation<InputT, ErrorT, Output2T> {
+		const evaluate = async (input: InputT): Promise<Either<ErrorT, Output2T>> => {
+			const output = await this.evaluate(input);
+
+			return f(output).evaluate();
+		};
+
+		return new AsyncComputation(evaluate);
+	}
+
+	flatMapWithNewInputAndError<Input2T, ErrorT, Output2T>(
+		f: (x: OutputT) => AsyncComputation<Input2T, ErrorT, Output2T>,
+	): AsyncComputation<[InputT, Input2T], ErrorT, Output2T> {
+		const evaluate = async ([input, input2]: [InputT, Input2T]): Promise<Either<ErrorT, Output2T>> => {
+			const output = await this.evaluate(input);
+
+			return f(output).evaluate(input2);
+		};
+
+		return new AsyncComputation(evaluate);
+	}
+
+	zip<Output2T>(other: AsyncSafeComputation<InputT, Output2T>): AsyncSafeComputation<InputT, [OutputT, Output2T]> {
+		const evaluate = async (input: InputT): Promise<[OutputT, Output2T]> => {
 			const output = await this.evaluate(input);
 			const otherOutput = await other.evaluate(input);
 
@@ -130,11 +198,11 @@ export class AsyncSafeComputation<Input, out Output> implements AsyncMonad<Outpu
 		return new AsyncSafeComputation(evaluate);
 	}
 
-	zip2<U, V>(
-		c2: AsyncSafeComputation<Input, U>,
-		c3: AsyncSafeComputation<Input, V>,
-	): AsyncSafeComputation<Input, [Output, U, V]> {
-		const evaluate = async (input: Input): Promise<[Output, U, V]> => {
+	zip2<O2T, O3T>(
+		c2: AsyncSafeComputation<InputT, O2T>,
+		c3: AsyncSafeComputation<InputT, O3T>,
+	): AsyncSafeComputation<InputT, [OutputT, O2T, O3T]> {
+		const evaluate = async (input: InputT): Promise<[OutputT, O2T, O3T]> => {
 			const output = await this.evaluate(input);
 			const o2 = await c2.evaluate(input);
 			const o3 = await c3.evaluate(input);
@@ -145,12 +213,12 @@ export class AsyncSafeComputation<Input, out Output> implements AsyncMonad<Outpu
 		return new AsyncSafeComputation(evaluate);
 	}
 
-	zip3<U, V, W>(
-		c2: AsyncSafeComputation<Input, U>,
-		c3: AsyncSafeComputation<Input, V>,
-		c4: AsyncSafeComputation<Input, W>,
-	): AsyncSafeComputation<Input, [Output, U, V, W]> {
-		const evaluate = async (input: Input): Promise<[Output, U, V, W]> => {
+	zip3<O2T, O3T, O4T>(
+		c2: AsyncSafeComputation<InputT, O2T>,
+		c3: AsyncSafeComputation<InputT, O3T>,
+		c4: AsyncSafeComputation<InputT, O4T>,
+	): AsyncSafeComputation<InputT, [OutputT, O2T, O3T, O4T]> {
+		const evaluate = async (input: InputT): Promise<[OutputT, O2T, O3T, O4T]> => {
 			const output = await this.evaluate(input);
 			const o2 = await c2.evaluate(input);
 			const o3 = await c3.evaluate(input);
@@ -162,13 +230,13 @@ export class AsyncSafeComputation<Input, out Output> implements AsyncMonad<Outpu
 		return new AsyncSafeComputation(evaluate);
 	}
 
-	zip4<U, V, W, X>(
-		c2: AsyncSafeComputation<Input, U>,
-		c3: AsyncSafeComputation<Input, V>,
-		c4: AsyncSafeComputation<Input, W>,
-		c5: AsyncSafeComputation<Input, X>,
-	): AsyncSafeComputation<Input, [Output, U, V, W, X]> {
-		const evaluate = async (input: Input): Promise<[Output, U, V, W, X]> => {
+	zip4<O2T, O3T, O4T, O5T>(
+		c2: AsyncSafeComputation<InputT, O2T>,
+		c3: AsyncSafeComputation<InputT, O3T>,
+		c4: AsyncSafeComputation<InputT, O4T>,
+		c5: AsyncSafeComputation<InputT, O5T>,
+	): AsyncSafeComputation<InputT, [OutputT, O2T, O3T, O4T, O5T]> {
+		const evaluate = async (input: InputT): Promise<[OutputT, O2T, O3T, O4T, O5T]> => {
 			const output = await this.evaluate(input);
 			const o2 = await c2.evaluate(input);
 			const o3 = await c3.evaluate(input);
@@ -181,14 +249,14 @@ export class AsyncSafeComputation<Input, out Output> implements AsyncMonad<Outpu
 		return new AsyncSafeComputation(evaluate);
 	}
 
-	zip5<U, V, W, X, Y>(
-		c2: AsyncSafeComputation<Input, U>,
-		c3: AsyncSafeComputation<Input, V>,
-		c4: AsyncSafeComputation<Input, W>,
-		c5: AsyncSafeComputation<Input, X>,
-		c6: AsyncSafeComputation<Input, Y>,
-	): AsyncSafeComputation<Input, [Output, U, V, W, X, Y]> {
-		const evaluate = async (input: Input): Promise<[Output, U, V, W, X, Y]> => {
+	zip5<O2T, O3T, O4T, O5T, O6T>(
+		c2: AsyncSafeComputation<InputT, O2T>,
+		c3: AsyncSafeComputation<InputT, O3T>,
+		c4: AsyncSafeComputation<InputT, O4T>,
+		c5: AsyncSafeComputation<InputT, O5T>,
+		c6: AsyncSafeComputation<InputT, O6T>,
+	): AsyncSafeComputation<InputT, [OutputT, O2T, O3T, O4T, O5T, O6T]> {
+		const evaluate = async (input: InputT): Promise<[OutputT, O2T, O3T, O4T, O5T, O6T]> => {
 			const output = await this.evaluate(input);
 			const o2 = await c2.evaluate(input);
 			const o3 = await c3.evaluate(input);
@@ -202,15 +270,15 @@ export class AsyncSafeComputation<Input, out Output> implements AsyncMonad<Outpu
 		return new AsyncSafeComputation(evaluate);
 	}
 
-	zip6<U, V, W, X, Y, Z>(
-		c2: AsyncSafeComputation<Input, U>,
-		c3: AsyncSafeComputation<Input, V>,
-		c4: AsyncSafeComputation<Input, W>,
-		c5: AsyncSafeComputation<Input, X>,
-		c6: AsyncSafeComputation<Input, Y>,
-		c7: AsyncSafeComputation<Input, Z>,
-	): AsyncSafeComputation<Input, [Output, U, V, W, X, Y, Z]> {
-		const evaluate = async (input: Input): Promise<[Output, U, V, W, X, Y, Z]> => {
+	zip6<O2T, O3T, O4T, O5T, O6T, O7T>(
+		c2: AsyncSafeComputation<InputT, O2T>,
+		c3: AsyncSafeComputation<InputT, O3T>,
+		c4: AsyncSafeComputation<InputT, O4T>,
+		c5: AsyncSafeComputation<InputT, O5T>,
+		c6: AsyncSafeComputation<InputT, O6T>,
+		c7: AsyncSafeComputation<InputT, O7T>,
+	): AsyncSafeComputation<InputT, [OutputT, O2T, O3T, O4T, O5T, O6T, O7T]> {
+		const evaluate = async (input: InputT): Promise<[OutputT, O2T, O3T, O4T, O5T, O6T, O7T]> => {
 			const output = await this.evaluate(input);
 			const o2 = await c2.evaluate(input);
 			const o3 = await c3.evaluate(input);
@@ -225,8 +293,8 @@ export class AsyncSafeComputation<Input, out Output> implements AsyncMonad<Outpu
 		return new AsyncSafeComputation(evaluate);
 	}
 
-	zipN<U>(...cs: Array<AsyncSafeComputation<Input, U>>): AsyncSafeComputation<Input, [Output, ...U[]]> {
-		const evaluate = async (input: Input): Promise<[Output, ...U[]]> => {
+	zipN<Output2T>(...cs: Array<AsyncSafeComputation<InputT, Output2T>>): AsyncSafeComputation<InputT, [OutputT, ...Output2T[]]> {
+		const evaluate = async (input: InputT): Promise<[OutputT, ...Output2T[]]> => {
 			const output = await this.evaluate(input);
 			const otherOutputs = await Promise.all(cs.map(async c => c.evaluate(input)));
 
@@ -234,5 +302,25 @@ export class AsyncSafeComputation<Input, out Output> implements AsyncMonad<Outpu
 		};
 
 		return new AsyncSafeComputation(evaluate);
+	}
+
+	bindInput(input: InputT): AsyncIO<OutputT> {
+		return new AsyncIO(async () => this.evaluate(input));
+	}
+
+	bindAsyncInput(inputFn: () => Promise<InputT>): AsyncIO<OutputT> {
+		return new AsyncIO(async () => this.evaluate(await inputFn()));
+	}
+
+	toAsync(): this {
+		return this;
+	}
+
+	toSafeComputation(): this {
+		return this;
+	}
+
+	toComputation(): AsyncComputation<InputT, never, OutputT> {
+		return new AsyncComputation(async (input: InputT) => new Right<never, OutputT>(await this.evaluate(input)));
 	}
 }

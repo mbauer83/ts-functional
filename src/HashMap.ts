@@ -3,12 +3,12 @@ import {type HasCount} from '@mbauer83/ts-utils/src/size/HasCount.js';
 import {QueriedValueNotPresent, type Throwable} from './definitions.js';
 import {type Either, Left, Right} from './Either.js';
 import {everyFilterable, type Filterable, noneFilterable, someFilterable} from './Filterable.js';
-import {type Monad} from './Monad.js';
 import {type Monoid} from './Monoid.js';
 import {type Optional, type Some, optionalFromValue} from './Optional.js';
 import {type PredicateOrFn, evaluatePredicate} from './Predicate.js';
 
-export class HashMap<S extends string | number | symbol, T> implements Monad<T>, Monoid<HashMap<S, T>>, Filterable<[S, T]>, HasCount {
+/** @ignore */
+export class HashMap<S extends string | number | symbol, T> implements Monoid<HashMap<S, T>>, Filterable<[S, T]>, HasCount {
 	protected static readonly defaultErrorMessage = (key: string) => `HashMap::getOrThrow - Unknown key [${key}].`;
 	private static readonly emptyFunction = () => { /* do nothing */ };
 	protected readonly _map: Map<S, T> = new Map<S, T>();
@@ -129,21 +129,18 @@ export class HashMap<S extends string | number | symbol, T> implements Monad<T>,
 		return new HashMap<S, U>(...newPairs);
 	}
 
+	pure<U>(x: U): HashMap<number, U> {
+		return new HashMap<number, U>([0, x]);
+	}
+
 	apply<U>(f: HashMap<S, (x: T) => U>): HashMap<S, U> {
 		const newPairs: Array<[S, U]> = [];
 		for (const [k, v] of this._map.entries()) {
-			const func = f.get(k);
-			func.match(
-				f => newPairs.push([k, f(v)]),
-				HashMap.emptyFunction,
-			);
+			const fn = f.getOrThrow(k);
+			newPairs.push([k, fn(v)]);
 		}
 
 		return new HashMap<S, U>(...newPairs);
-	}
-
-	pure<U>(x: U): HashMap<number, U> {
-		return new HashMap<number, U>([0, x]);
 	}
 
 	flatMap<U>(f: (x: T) => HashMap<S, U>): HashMap<S, U[]> {

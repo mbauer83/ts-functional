@@ -1,12 +1,29 @@
 import {AsyncComputation} from './AsyncComputation.js';
 import {AsyncSafeComputation} from './AsyncSafeComputation.js';
 import {AsyncTask} from './AsyncTask.js';
-import {type Either} from './Either.js';
-import {type AsyncMonad} from './Monad.js';
+import {Right, type Either} from './Either.js';
+import {type AsyncBindEffectType, asyncBindEffectToIO, type BindEffectType, type AsyncEffect} from './definitions.js';
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
-export class AsyncIO<out T> implements AsyncMonad<T> {
+export class AsyncIO<out T> implements AsyncEffect<any, never, T> {
+	static of<OutputT>(value: OutputT): AsyncIO<OutputT> {
+		return new AsyncIO(async () => value);
+	}
+
+	static do(): AsyncIO<Record<any, any>> {
+		return AsyncIO.of({});
+	}
+
 	constructor(public readonly evaluate: (..._: any[]) => Promise<T>) {}
+
+	bindKey<KeyT extends (string | symbol | number), Output2T, EffectT extends (BindEffectType<Output2T> | AsyncBindEffectType<Output2T>)>(key: KeyT, f: (input: T) => EffectT): AsyncIO<T & Record<KeyT, Output2T>> {
+		return this.flatMap((output: T) => {
+			const asyncEffect = f(output).toAsync();
+			// eslint-disable-next-line @typescript-eslint/naming-convention
+			const asyncIOEffect = asyncBindEffectToIO<Output2T, typeof asyncEffect>(asyncEffect);
+			return asyncIOEffect.map(async (output2: Output2T) => Object.assign({}, output, {[key]: output2} as Record<KeyT, Output2T>));
+		});
+	}
 
 	thenDo<U>(f: (..._: any[]) => Promise<U>): AsyncIO<U> {
 		const resolver = async (..._: any[]) => {
@@ -17,13 +34,22 @@ export class AsyncIO<out T> implements AsyncMonad<T> {
 		return new AsyncIO(resolver);
 	}
 
+	tap<EffectT extends BindEffectType<any> | AsyncBindEffectType<any>>(f: (input: T) => EffectT): this {
+		return this.flatMap((output: T) => {
+			const asyncEffect = f(output).toAsync();
+			// eslint-disable-next-line @typescript-eslint/naming-convention
+			const asyncIOEffect = asyncBindEffectToIO(asyncEffect);
+			return asyncIOEffect.map(async () => output);
+		}) as this;
+	}
+
 	// eslint-disable-next-line @typescript-eslint/naming-convention
 	thenDoIO<U>(io: AsyncIO<U>): AsyncIO<U> {
 		return this.thenDo(async () => io.evaluate());
 	}
 
-	thenDoWithInput<Input, Output2>(f: (input: Input) => Promise<Output2>): AsyncSafeComputation<Input, Output2> {
-		const resolver = async (input: Input) => {
+	thenDoWithInput<InputT, Output2T>(f: (input: InputT) => Promise<Output2T>): AsyncSafeComputation<InputT, Output2T> {
+		const resolver = async (input: InputT) => {
 			await this.evaluate();
 			return f(input);
 		};
@@ -31,13 +57,13 @@ export class AsyncIO<out T> implements AsyncMonad<T> {
 		return new AsyncSafeComputation(resolver);
 	}
 
-	thenDoSafeComputation<Input, Output2>(
-		computation: AsyncSafeComputation<Input, Output2>,
-	): AsyncSafeComputation<Input, Output2> {
-		return this.thenDoWithInput(async (input: Input) => computation.evaluate(input));
+	thenDoSafeComputation<InputT, Output2T>(
+		computation: AsyncSafeComputation<InputT, Output2T>,
+	): AsyncSafeComputation<InputT, Output2T> {
+		return this.thenDoWithInput(async (input: InputT) => computation.evaluate(input));
 	}
 
-	thenDoWithError<E, U>(f: (..._: any[]) => Promise<Either<E, U>>): AsyncTask<E, U> {
+	thenDoWithError<ErrorT, Output2T>(f: (..._: any[]) => Promise<Either<ErrorT, Output2T>>): AsyncTask<ErrorT, Output2T> {
 		const resolver = async (..._: any[]) => {
 			await this.evaluate();
 			return f();
@@ -46,14 +72,14 @@ export class AsyncIO<out T> implements AsyncMonad<T> {
 		return new AsyncTask(resolver);
 	}
 
-	thenDoTask<E2, O2>(task: AsyncTask<E2, O2>): AsyncTask<E2, O2> {
+	thenDoTask<Error2T, Output2T>(task: AsyncTask<Error2T, Output2T>): AsyncTask<Error2T, Output2T> {
 		return this.thenDoWithError(async () => task.evaluate());
 	}
 
-	thenDoWithInputAndError<I, E2, O2>(
-		f: (input: I) => Promise<Either<E2, O2>>,
-	): AsyncComputation<I, E2, O2> {
-		const resolver = async (input: I) => {
+	thenDoWithInputAndError<InputT, Error2T, Output2T>(
+		f: (input: InputT) => Promise<Either<Error2T, Output2T>>,
+	): AsyncComputation<InputT, Error2T, Output2T> {
+		const resolver = async (input: InputT) => {
 			await this.evaluate();
 			return f(input);
 		};
@@ -61,42 +87,59 @@ export class AsyncIO<out T> implements AsyncMonad<T> {
 		return new AsyncComputation(resolver);
 	}
 
-	thenDoComputation<I, E2, O2>(
-		computation: AsyncComputation<I, E2, O2>,
-	): AsyncComputation<I, E2, O2> {
-		return this.thenDoWithInputAndError(async (input: I) => computation.evaluate(input));
+	thenDoComputation<InputT, Error2T, Output2T>(
+		computation: AsyncComputation<InputT, Error2T, Output2T>,
+	): AsyncComputation<InputT, Error2T, Output2T> {
+		return this.thenDoWithInputAndError(async (input: InputT) => computation.evaluate(input));
 	}
 
-	mapToTask<E, U>(f: (x: T) => Promise<Either<E, U>>): AsyncTask<E, U> {
+	mapToTask<ErrorT, Output2T>(f: (x: T) => Promise<Either<ErrorT, Output2T>>): AsyncTask<ErrorT, Output2T> {
 		const evaluate = async () => f(await this.evaluate());
-		return new AsyncTask<E, U>(evaluate);
+		return new AsyncTask<ErrorT, Output2T>(evaluate);
 	}
 
-	mapToComputation<I, E, U>(f: (x: T) => (i: I) => Promise<Either<E, U>>): AsyncComputation<I, E, U> {
-		const evaluate = async (i: I) => f(await this.evaluate())(i);
-		return new AsyncComputation<I, E, U>(evaluate);
+	mapToComputation<InputT, ErrorT, Output2T>(f: (x: T) => (i: InputT) => Promise<Either<ErrorT, Output2T>>): AsyncComputation<InputT, ErrorT, Output2T> {
+		const evaluate = async (i: InputT) => f(await this.evaluate())(i);
+		return new AsyncComputation<InputT, ErrorT, Output2T>(evaluate);
 	}
 
-	map<U>(f: (x: T) => Promise<U>): AsyncIO<U> {
+	map<Output2T>(f: (x: T) => Promise<Output2T>): AsyncIO<Output2T> {
 		const evaluate = async () => f(await this.evaluate());
 		return new AsyncIO(evaluate);
 	}
 
-	apply<U>(f: AsyncIO<(x: T) => Promise<U>>): AsyncIO<U> {
+	apply<Output2T>(f: AsyncIO<(x: T) => Promise<Output2T>>): AsyncIO<Output2T> {
 		return f.flatMap(g => this.map(g));
 	}
 
-	pure<U>(x: Promise<U>): AsyncIO<U> {
+	pure<Output2T>(x: Promise<Output2T>): AsyncIO<Output2T> {
 		return new AsyncIO(async () => x);
 	}
 
-	flatMap<U>(f: (x: T) => AsyncIO<U>): AsyncIO<U> {
+	flatMap<Output2T>(f: (x: T) => AsyncIO<Output2T>): AsyncIO<Output2T> {
 		const evaluate = async () => f(await this.evaluate()).evaluate();
 		return new AsyncIO(evaluate);
 	}
 
-	zip<U>(other: AsyncIO<U>): AsyncIO<[T, U]> {
-		const evaluate = async (): Promise<[T, U]> => {
+	flatMapWithInput<InputT, Output2T>(f: (x: T) => AsyncSafeComputation<InputT, Output2T>): AsyncSafeComputation<InputT, Output2T> {
+		const evaluate = async (input: InputT) => f(await this.evaluate()).evaluate(input);
+		return new AsyncSafeComputation(evaluate);
+	}
+
+	flatMapWithError<ErrorT>(f: (x: T) => AsyncTask<ErrorT, T>): AsyncTask<ErrorT, T> {
+		const evaluate = async () => f(await this.evaluate()).evaluate();
+		return new AsyncTask(evaluate);
+	}
+
+	flatMapWithInputAndError<InputT, ErrorT, Output2T>(
+		f: (x: T) => AsyncComputation<InputT, ErrorT, Output2T>,
+	): AsyncComputation<InputT, ErrorT, Output2T> {
+		const evaluate = async (input: InputT) => f(await this.evaluate()).evaluate(input);
+		return new AsyncComputation(evaluate);
+	}
+
+	zip<Output2T>(other: AsyncIO<Output2T>): AsyncIO<[T, Output2T]> {
+		const evaluate = async (): Promise<[T, Output2T]> => {
 			const output = await this.evaluate();
 			const otherOutput = await other.evaluate();
 
@@ -210,5 +253,26 @@ export class AsyncIO<out T> implements AsyncMonad<T> {
 		};
 
 		return new AsyncIO(evaluate);
+	}
+
+	// eslint-disable-next-line @typescript-eslint/prefer-return-this-type
+	bindInput<InputT>(input: InputT): AsyncIO<T> {
+		return this;
+	}
+
+	toAsync(): this {
+		return this;
+	}
+
+	toTask(): AsyncTask<never, T> {
+		return new AsyncTask(async () => new Right<never, T>(await this.evaluate()));
+	}
+
+	toSafeComputation(): AsyncSafeComputation<any, T> {
+		return new AsyncSafeComputation(async () => this.evaluate());
+	}
+
+	toComputation(): AsyncComputation<any, never, T> {
+		return new AsyncComputation(async () => new Right<never, T>(await this.evaluate()));
 	}
 }

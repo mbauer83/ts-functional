@@ -1,8 +1,9 @@
 {
   "compilerOptions": {
       "incremental": true,
-      "target": "ESNext",
-      "module": "CommonJS",
+      "target": "ES2022",
+      "lib": ["ES2023"],
+      "module": "Node16",
       "allowJs": true,
       "checkJs": false,
       "declaration": true,
@@ -12,7 +13,8 @@
       "sourceMap": true,
       "strict": true,
       "alwaysStrict": true,
-      "moduleResolution": "node",
+      "moduleResolution": "nodenext",
+      "skipLibCheck": true,
       "esModuleInterop": true,
       "baseUrl": "./",
       "paths": {

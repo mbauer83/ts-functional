@@ -1,135 +1,191 @@
 import {AsyncSafeComputation} from './AsyncSafeComputation.js';
 import {Computation} from './Computation.js';
 import {type ContravariantFunctor} from './Contravariant.js';
-import {type Either} from './Either.js';
-import {type IO} from './IO.js';
-import {type Monad} from './Monad.js';
+import {Right, type Either} from './Either.js';
+import {IO} from './IO.js';
 import {type Task} from './Task.js';
+import {type BindEffectType, boundEffectToIO, type Effect} from './definitions.js';
 
-export class SafeComputation<Input, out Output> implements Monad<Output>, ContravariantFunctor<Input> {
-	constructor(public readonly evaluate: (input: Input) => Output) {}
+export class SafeComputation<in InputT, out OutputT> implements Effect<InputT, never, OutputT>, ContravariantFunctor<InputT> {
+	static of<OutputT>(x: OutputT): SafeComputation<any, OutputT> {
+		return new SafeComputation<any, OutputT>(() => x);
+	}
 
-	thenDo<Output2>(f: (..._: any[]) => Output2): SafeComputation<Input, Output2> {
-		return new SafeComputation<Input, Output2>(input => f(this.evaluate(input)));
+	static do(): SafeComputation<any, Record<any, any>> {
+		return SafeComputation.of({});
+	}
+
+	constructor(public readonly evaluate: (input: InputT) => OutputT) {}
+
+	bindKey<KeyT extends string | number | symbol, Output2T, EffectT extends BindEffectType<Output2T>>(key: KeyT, f: (input: OutputT) => EffectT): SafeComputation<InputT, OutputT & Record<KeyT, Output2T>> {
+		return this.flatMap(x => {
+			const resolver = (input: InputT) => {
+				const thisResolved = this.evaluate(input);
+				const effectSafeComputation = boundEffectToIO<Output2T, EffectT>(f(thisResolved)).toSafeComputation();
+				const effectResult = effectSafeComputation.evaluate(input);
+				return Object.assign({}, thisResolved, {[key]: effectResult} as Record<KeyT, Output2T>);
+			};
+
+			return new SafeComputation<InputT, OutputT & Record<KeyT, Output2T>>(resolver);
+		});
+	}
+
+	tap<EffectT extends BindEffectType<any>>(f: (input: OutputT) => EffectT): this {
+		return this.flatMap((x: OutputT) => {
+			const resolver = (input: InputT) => {
+				this.evaluate(input);
+				const effectSafeComputation = boundEffectToIO<EffectT, EffectT>(f(x)).toSafeComputation();
+				effectSafeComputation.evaluate(input);
+				return x;
+			};
+
+			return new SafeComputation<InputT, OutputT>(resolver);
+		}) as this;
+	}
+
+	thenDo<OutputT2>(f: (..._: any[]) => OutputT2): SafeComputation<InputT, OutputT2> {
+		return new SafeComputation<InputT, OutputT2>(input => f(this.evaluate(input)));
 	}
 
 	// eslint-disable-next-line @typescript-eslint/naming-convention
-	thenDoIO<Output2>(io: IO<Output2>): SafeComputation<Input, Output2> {
+	thenDoIO<OutputT2>(io: IO<OutputT2>): SafeComputation<InputT, OutputT2> {
 		return this.thenDo(() => io.evaluate());
 	}
 
-	thenDoWithError<Error, Output2>(f: (..._: any[]) => Either<Error, Output2>): Computation<Input, Error, Output2> {
-		return new Computation<Input, Error, Output2>(input => f(this.evaluate(input)));
+	thenDoWithError<ErrorT, OutputT2>(f: (..._: any[]) => Either<ErrorT, OutputT2>): Computation<InputT, ErrorT, OutputT2> {
+		return new Computation<InputT, ErrorT, OutputT2>(input => f(this.evaluate(input)));
 	}
 
-	thenDoTask<Error, Output2>(task: Task<Error, Output2>): Computation<Input, Error, Output2> {
+	thenDoTask<ErrorT, OutputT2>(task: Task<ErrorT, OutputT2>): Computation<InputT, ErrorT, OutputT2> {
 		return this.thenDoWithError(() => task.evaluate());
 	}
 
-	thenDoWithSameInput<Output2>(f: (input: Input) => Output2): SafeComputation<Input, Output2> {
-		return new SafeComputation<Input, Output2>((input: Input) => {
+	thenDoWithSameInput<Input2T extends InputT, OutputT2>(f: (input: Input2T) => OutputT2): SafeComputation<Input2T, OutputT2> {
+		return new SafeComputation<Input2T, OutputT2>((input: Input2T) => {
 			this.evaluate(input);
 			return f(input);
 		});
 	}
 
-	thenDoSafeComputation<Output2>(computation: SafeComputation<Input, Output2>): SafeComputation<Input, Output2> {
-		return this.thenDoWithSameInput((input: Input) => computation.evaluate(input));
+	thenDoSafeComputation<OutputT2>(computation: SafeComputation<InputT, OutputT2>): SafeComputation<InputT, OutputT2> {
+		return this.thenDoWithSameInput((input: InputT) => computation.evaluate(input));
 	}
 
-	thenDoWithSameInputAndError<Error, Output2>(
-		f: (input: Input) => Either<Error, Output2>,
-	): Computation<Input, Error, Output2> {
-		return new Computation<Input, Error, Output2>(input => {
+	thenDoWithSameInputAndError<Input2T extends InputT, ErrorT, OutputT2>(
+		f: (input: Input2T) => Either<ErrorT, OutputT2>,
+	): Computation<Input2T, ErrorT, OutputT2> {
+		return new Computation<Input2T, ErrorT, OutputT2>(input => {
 			this.evaluate(input);
 			return f(input);
 		});
 	}
 
-	thenDoComputationWithSameInput<Error, Output2>(
-		computation: Computation<Input, Error, Output2>,
-	): Computation<Input, Error, Output2> {
+	thenDoComputationWithSameInput<Input2T extends InputT, ErrorT, OutputT2>(
+		computation: Computation<Input2T, ErrorT, OutputT2>,
+	): Computation<Input2T, ErrorT, OutputT2> {
 		return this.thenDoWithSameInputAndError(input => computation.evaluate(input));
 	}
 
-	thenDoWithNewInputAndError<Input2, Error, Output2>(
-		f: (input: Input2) => Either<Error, Output2>,
-	): Computation<[Input, Input2], Error, Output2> {
-		const resolver = ([input, input2]: [Input, Input2]) => {
+	thenDoWithNewInputAndError<InputT2, ErrorT, OutputT2>(
+		f: (input: InputT2) => Either<ErrorT, OutputT2>,
+	): Computation<[InputT, InputT2], ErrorT, OutputT2> {
+		const resolver = ([input, input2]: [InputT, InputT2]) => {
 			this.evaluate(input);
 			return f(input2);
 		};
 
-		return new Computation<[Input, Input2], Error, Output2>(resolver);
+		return new Computation<[InputT, InputT2], ErrorT, OutputT2>(resolver);
 	}
 
-	thenDoComputationWithNewInput<Input2, Error2, Output2>(
-		computation: Computation<Input2, Error2, Output2>,
-	): Computation<[Input, Input2], Error2, Output2> {
+	thenDoComputationWithNewInput<InputT2, ErrorT2, OutputT2>(
+		computation: Computation<InputT2, ErrorT2, OutputT2>,
+	): Computation<[InputT, InputT2], ErrorT2, OutputT2> {
 		return this.thenDoWithNewInputAndError(input2 => computation.evaluate(input2));
 	}
 
-	contramap<PreInput>(f: (input: PreInput) => Input): SafeComputation<PreInput, Output> {
-		return new SafeComputation<PreInput, Output>(input => this.evaluate(f(input)));
+	contramap<PreInput>(f: (input: PreInput) => InputT): SafeComputation<PreInput, OutputT> {
+		return new SafeComputation<PreInput, OutputT>(input => this.evaluate(f(input)));
 	}
 
-	map<Output2>(f: (output: Output) => Output2): SafeComputation<Input, Output2> {
-		return new SafeComputation<Input, Output2>(input => f(this.evaluate(input)));
+	map<OutputT2>(f: (output: OutputT) => OutputT2): SafeComputation<InputT, OutputT2> {
+		return new SafeComputation<InputT, OutputT2>(input => f(this.evaluate(input)));
 	}
 
-	apply<Output2>(f: SafeComputation<Input, (x: Output) => Output2>): SafeComputation<Input, Output2> {
+	apply<OutputT2>(f: SafeComputation<InputT, (x: OutputT) => OutputT2>): SafeComputation<InputT, OutputT2> {
 		return f.flatMap(g => this.map(g));
 	}
 
-	pure<Output2>(x: Output2): SafeComputation<any, Output2> {
-		return new SafeComputation<any, Output2>(() => x);
+	pure<OutputT2>(x: OutputT2): SafeComputation<any, OutputT2> {
+		return new SafeComputation<any, OutputT2>(() => x);
 	}
 
-	flatMap<Output2>(f: (x: Output) => SafeComputation<Input, Output2>): SafeComputation<Input, Output2> {
-		return new SafeComputation<Input, Output2>(input => f(this.evaluate(input)).evaluate(input));
+	flatMap<OutputT2>(f: (x: OutputT) => SafeComputation<InputT, OutputT2>): SafeComputation<InputT, OutputT2> {
+		return new SafeComputation<InputT, OutputT2>(input => f(this.evaluate(input)).evaluate(input));
 	}
 
-	zip<Output2>(other: SafeComputation<Input, Output2>): SafeComputation<Input, [Output, Output2]> {
-		const evaluate = (input: Input): [Output, Output2] => [this.evaluate(input), other.evaluate(input)];
+	flatMapWithNewInput<Input2T, OutputT2>(
+		f: (x: OutputT) => SafeComputation<Input2T, OutputT2>,
+	): SafeComputation<[InputT, Input2T], OutputT2> {
+		const evaluate = ([input, input2]: [InputT, Input2T]) => f(this.evaluate(input)).evaluate(input2);
 
-		return new SafeComputation<Input, [Output, Output2]>(evaluate);
+		return new SafeComputation<[InputT, Input2T], OutputT2>(evaluate);
 	}
 
-	zip2<Output2, Output3>(
-		o2: SafeComputation<Input, Output2>,
-		o3: SafeComputation<Input, Output3>,
-	): SafeComputation<Input, [Output, Output2, Output3]> {
-		const evaluate = (input: Input): [Output, Output2, Output3] => [
+	flatMapWithError<ErrorT, Output2T>(
+		f: (x: OutputT) => Task<ErrorT, Output2T>,
+	): Computation<InputT, ErrorT, Output2T> {
+		return new Computation<InputT, ErrorT, Output2T>(input => f(this.evaluate(input)).evaluate());
+	}
+
+	flatMapWithNewInputAndError<Input2T, ErrorT, Output2T>(
+		f: (x: OutputT) => Computation<Input2T, ErrorT, Output2T>,
+	): Computation<[InputT, Input2T], ErrorT, Output2T> {
+		const evaluate = ([input, input2]: [InputT, Input2T]) => f(this.evaluate(input)).evaluate(input2);
+
+		return new Computation<[InputT, Input2T], ErrorT, Output2T>(evaluate);
+	}
+
+	zip<OutputT2>(other: SafeComputation<InputT, OutputT2>): SafeComputation<InputT, [OutputT, OutputT2]> {
+		const evaluate = (input: InputT): [OutputT, OutputT2] => [this.evaluate(input), other.evaluate(input)];
+
+		return new SafeComputation<InputT, [OutputT, OutputT2]>(evaluate);
+	}
+
+	zip2<OutputT2, OutputT3>(
+		o2: SafeComputation<InputT, OutputT2>,
+		o3: SafeComputation<InputT, OutputT3>,
+	): SafeComputation<InputT, [OutputT, OutputT2, OutputT3]> {
+		const evaluate = (input: InputT): [OutputT, OutputT2, OutputT3] => [
 			this.evaluate(input),
 			o2.evaluate(input),
 			o3.evaluate(input),
 		];
 
-		return new SafeComputation<Input, [Output, Output2, Output3]>(evaluate);
+		return new SafeComputation<InputT, [OutputT, OutputT2, OutputT3]>(evaluate);
 	}
 
-	zip3<Output2, Output3, Output4>(
-		o2: SafeComputation<Input, Output2>,
-		o3: SafeComputation<Input, Output3>,
-		o4: SafeComputation<Input, Output4>,
-	): SafeComputation<Input, [Output, Output2, Output3, Output4]> {
-		const evaluate = (input: Input): [Output, Output2, Output3, Output4] => [
+	zip3<OutputT2, OutputT3, OutputT4>(
+		o2: SafeComputation<InputT, OutputT2>,
+		o3: SafeComputation<InputT, OutputT3>,
+		o4: SafeComputation<InputT, OutputT4>,
+	): SafeComputation<InputT, [OutputT, OutputT2, OutputT3, OutputT4]> {
+		const evaluate = (input: InputT): [OutputT, OutputT2, OutputT3, OutputT4] => [
 			this.evaluate(input),
 			o2.evaluate(input),
 			o3.evaluate(input),
 			o4.evaluate(input),
 		];
 
-		return new SafeComputation<Input, [Output, Output2, Output3, Output4]>(evaluate);
+		return new SafeComputation<InputT, [OutputT, OutputT2, OutputT3, OutputT4]>(evaluate);
 	}
 
-	zip4<Output2, Output3, Output4, Output5>(
-		o2: SafeComputation<Input, Output2>,
-		o3: SafeComputation<Input, Output3>,
-		o4: SafeComputation<Input, Output4>,
-		o5: SafeComputation<Input, Output5>,
-	): SafeComputation<Input, [Output, Output2, Output3, Output4, Output5]> {
-		const evaluate = (input: Input): [Output, Output2, Output3, Output4, Output5] => [
+	zip4<OutputT2, OutputT3, OutputT4, OutputT5>(
+		o2: SafeComputation<InputT, OutputT2>,
+		o3: SafeComputation<InputT, OutputT3>,
+		o4: SafeComputation<InputT, OutputT4>,
+		o5: SafeComputation<InputT, OutputT5>,
+	): SafeComputation<InputT, [OutputT, OutputT2, OutputT3, OutputT4, OutputT5]> {
+		const evaluate = (input: InputT): [OutputT, OutputT2, OutputT3, OutputT4, OutputT5] => [
 			this.evaluate(input),
 			o2.evaluate(input),
 			o3.evaluate(input),
@@ -137,17 +193,17 @@ export class SafeComputation<Input, out Output> implements Monad<Output>, Contra
 			o5.evaluate(input),
 		];
 
-		return new SafeComputation<Input, [Output, Output2, Output3, Output4, Output5]>(evaluate);
+		return new SafeComputation<InputT, [OutputT, OutputT2, OutputT3, OutputT4, OutputT5]>(evaluate);
 	}
 
-	zip5<Output2, Output3, Output4, Output5, Output6>(
-		o2: SafeComputation<Input, Output2>,
-		o3: SafeComputation<Input, Output3>,
-		o4: SafeComputation<Input, Output4>,
-		o5: SafeComputation<Input, Output5>,
-		o6: SafeComputation<Input, Output6>,
-	): SafeComputation<Input, [Output, Output2, Output3, Output4, Output5, Output6]> {
-		const evaluate = (input: Input): [Output, Output2, Output3, Output4, Output5, Output6] => [
+	zip5<OutputT2, OutputT3, OutputT4, OutputT5, OutputT6>(
+		o2: SafeComputation<InputT, OutputT2>,
+		o3: SafeComputation<InputT, OutputT3>,
+		o4: SafeComputation<InputT, OutputT4>,
+		o5: SafeComputation<InputT, OutputT5>,
+		o6: SafeComputation<InputT, OutputT6>,
+	): SafeComputation<InputT, [OutputT, OutputT2, OutputT3, OutputT4, OutputT5, OutputT6]> {
+		const evaluate = (input: InputT): [OutputT, OutputT2, OutputT3, OutputT4, OutputT5, OutputT6] => [
 			this.evaluate(input),
 			o2.evaluate(input),
 			o3.evaluate(input),
@@ -156,18 +212,18 @@ export class SafeComputation<Input, out Output> implements Monad<Output>, Contra
 			o6.evaluate(input),
 		];
 
-		return new SafeComputation<Input, [Output, Output2, Output3, Output4, Output5, Output6]>(evaluate);
+		return new SafeComputation<InputT, [OutputT, OutputT2, OutputT3, OutputT4, OutputT5, OutputT6]>(evaluate);
 	}
 
-	zip6<Output2, Output3, Output4, Output5, Output6, Output7>(
-		o2: SafeComputation<Input, Output2>,
-		o3: SafeComputation<Input, Output3>,
-		o4: SafeComputation<Input, Output4>,
-		o5: SafeComputation<Input, Output5>,
-		o6: SafeComputation<Input, Output6>,
-		o7: SafeComputation<Input, Output7>,
-	): SafeComputation<Input, [Output, Output2, Output3, Output4, Output5, Output6, Output7]> {
-		const evaluate = (input: Input): [Output, Output2, Output3, Output4, Output5, Output6, Output7] => [
+	zip6<OutputT2, OutputT3, OutputT4, OutputT5, OutputT6, OutputT7>(
+		o2: SafeComputation<InputT, OutputT2>,
+		o3: SafeComputation<InputT, OutputT3>,
+		o4: SafeComputation<InputT, OutputT4>,
+		o5: SafeComputation<InputT, OutputT5>,
+		o6: SafeComputation<InputT, OutputT6>,
+		o7: SafeComputation<InputT, OutputT7>,
+	): SafeComputation<InputT, [OutputT, OutputT2, OutputT3, OutputT4, OutputT5, OutputT6, OutputT7]> {
+		const evaluate = (input: InputT): [OutputT, OutputT2, OutputT3, OutputT4, OutputT5, OutputT6, OutputT7] => [
 			this.evaluate(input),
 			o2.evaluate(input),
 			o3.evaluate(input),
@@ -177,19 +233,32 @@ export class SafeComputation<Input, out Output> implements Monad<Output>, Contra
 			o7.evaluate(input),
 		];
 
-		return new SafeComputation<Input, [Output, Output2, Output3, Output4, Output5, Output6, Output7]>(evaluate);
+		return new SafeComputation<InputT, [OutputT, OutputT2, OutputT3, OutputT4, OutputT5, OutputT6, OutputT7]>(evaluate);
 	}
 
-	zipN<Output2>(...others: Array<SafeComputation<Input, Output2>>): SafeComputation<Input, [Output, ...Output2[]]> {
-		const evaluate = (input: Input): [Output, ...Output2[]] => [
+	zipN<OutputT2>(...others: Array<SafeComputation<InputT, OutputT2>>): SafeComputation<InputT, [OutputT, ...OutputT2[]]> {
+		const evaluate = (input: InputT): [OutputT, ...OutputT2[]] => [
 			this.evaluate(input),
 			...others.map(o => o.evaluate(input)),
 		];
 
-		return new SafeComputation<Input, [Output, ...Output2[]]>(evaluate);
+		return new SafeComputation<InputT, [OutputT, ...OutputT2[]]>(evaluate);
 	}
 
-	toAsync(): AsyncSafeComputation<Input, Output> {
-		return new AsyncSafeComputation<Input, Output>(async input => this.evaluate(input));
+	toAsync(): AsyncSafeComputation<InputT, OutputT> {
+		return new AsyncSafeComputation<InputT, OutputT>(async input => this.evaluate(input));
+	}
+
+	bindInput(input: InputT): IO<OutputT> {
+		return new IO(() => this.evaluate(input));
+	}
+
+	toSafeComputation(): this {
+		return this;
+	}
+
+	toComputation(): Computation<InputT, never, OutputT> {
+		return new Computation<InputT, never, OutputT>((input: InputT) =>
+			new Right<never, OutputT>(this.evaluate(input)));
 	}
 }

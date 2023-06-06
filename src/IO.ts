@@ -1,13 +1,29 @@
 import {AsyncIO} from './AsyncIO.js';
 import {Computation} from './Computation.js';
-import {type Either} from './Either.js';
-import {type Monad} from './Monad.js';
+import {Right, type Either} from './Either.js';
 import {SafeComputation} from './SafeComputation.js';
 import {Task} from './Task.js';
+import {type BindEffectType, boundEffectToIO, type Effect, AnyEffect} from './definitions.js';
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
-export class IO<out T> implements Monad<T> {
+export class IO<out T> implements Effect<any, never, T> {
+	static of<T>(value: T): IO<T> {
+		return new IO(() => value);
+	}
+
+	static do(): IO<Record<any, any>> {
+		return new IO(() => ({}));
+	}
+
 	constructor(public readonly evaluate: (..._: any[]) => T) {}
+
+	bindKey<KeyT extends string | number | symbol, Output2T, EffectT extends BindEffectType<Output2T>>(key: KeyT, f: (input: T) => EffectT): IO<T & Record<KeyT, Output2T>> {
+		return this.flatMap((input: T) => boundEffectToIO<Output2T, EffectT>(f(input)).map((output2: Output2T) => Object.assign({}, input, {[key]: output2} as Record<KeyT, Output2T>)));
+	}
+
+	tap<EffectT extends BindEffectType<any>>(f: (input: T) => EffectT): this {
+		return this.flatMap((input: T) => boundEffectToIO<EffectT, EffectT>(f(input)).map(() => input)) as this;
+	}
 
 	thenDo<U>(f: (..._: any[]) => U): IO<U> {
 		const resolver = (..._: any[]) => {
@@ -98,6 +114,21 @@ export class IO<out T> implements Monad<T> {
 		return new IO(evaluate);
 	}
 
+	flatMapWithInput<InputT, Output2T>(f: (input: T) => SafeComputation<InputT, Output2T>): SafeComputation<InputT, Output2T> {
+		const evaluate = (input: InputT) => f(this.evaluate()).evaluate(input);
+		return new SafeComputation(evaluate);
+	}
+
+	flatMapWithError<ErrorT, Output2T>(f: (x: T) => Task<ErrorT, Output2T>): Task<ErrorT, Output2T> {
+		const evaluate = () => f(this.evaluate()).evaluate();
+		return new Task(evaluate);
+	}
+
+	flatMapWithInputAndError<InputT, ErrorT, Output2T>(f: (x: T) => Computation<InputT, ErrorT, Output2T>): Computation<InputT, ErrorT, Output2T> {
+		const evaluate = (input: InputT) => f(this.evaluate()).evaluate(input);
+		return new Computation(evaluate);
+	}
+
 	zip<U>(other: IO<U>): IO<[T, U]> {
 		const evaluate: () => [T, U] = () => [this.evaluate(), other.evaluate()];
 		return new IO(evaluate);
@@ -164,7 +195,24 @@ export class IO<out T> implements Monad<T> {
 		return new IO(evaluate);
 	}
 
+	// eslint-disable-next-line @typescript-eslint/prefer-return-this-type
+	bindInput<InputT>(input: InputT): IO<T> {
+		return this;
+	}
+
 	toAsync(): AsyncIO<T> {
 		return new AsyncIO(async () => this.evaluate());
+	}
+
+	toSafeComputation(): SafeComputation<any, T> {
+		return new SafeComputation(() => this.evaluate());
+	}
+
+	toTask(): Task<never, T> {
+		return new Task(() => new Right<never, T>(this.evaluate()));
+	}
+
+	toComputation(): Computation<any, never, T> {
+		return new Computation(() => new Right<never, T>(this.evaluate()));
 	}
 }

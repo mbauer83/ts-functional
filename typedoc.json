@@ -1,0 +1,26 @@
+{
+    // Comments are supported, like tsconfig.json
+    "entryPoints": ["src/"],
+    "out": "docs",
+    "exclude": ["./src/HashMap.ts"],
+    "compilerOptions": {
+        "incremental": true,
+        "target": "ESNext",
+        "module": "CommonJS",
+        "downlevelIteration": true,
+        "allowJs": true,
+        "checkJs": false,
+        "declaration": true,
+        "declarationDir": "./dist/types",
+        "declarationMap": true,
+        "outDir": "./dist",
+        "sourceMap": true,
+        "strict": true,
+        "alwaysStrict": true,
+        "esModuleInterop": true,
+        "baseUrl": "./",
+        "paths": {
+            "@mbauer83/ts-utils": ["../node_modules/@mbauer83/ts-utils/src/index.d.ts"]
+        }
+    }
+}
